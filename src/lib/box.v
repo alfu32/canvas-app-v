@@ -50,6 +50,38 @@ pub fn (b Box) clone() Box{
 pub fn (b Box) corner() Point{
 	return b.anchor.add(b.size)
 }
+pub fn (b Box) contains_point(p Point) bool{
+	a:=b.anchor
+	c:=b.corner()
+	return a.x<=p.x && p.x<=c.x && a.y<=p.y && p.y<=c.y
+}
+pub fn (b Box) corners() []Point {
+	a:=b.anchor
+	c:=b.corner()
+	mut r:=[a.clone()]
+	r<<Point{a.x,c.y}
+	r<<c.clone()
+	r<<Point{c.x,a.y}
+	return r
+}
+pub fn (b Box) contains_box(o Box) bool{
+	mut a:=true
+	for corner in o.corners(){
+		a=a && b.contains_point(corner)
+	}
+	return a
+}
+pub fn (b Box) intersects_box(o Box) bool{
+	mut a:=false
+	for corner in o.corners(){
+		a=a || b.contains_point(corner)
+	}
+	mut z:=false
+	for corner in b.corners(){
+		z=z || o.contains_point(corner)
+	}
+	return a || z
+}
 
 pub fn (b Box) bounding_box(scale f64) Box{
 	a0:=b.anchor.floor(scale)
@@ -61,7 +93,6 @@ pub fn (b Box) bounding_box(scale f64) Box{
 pub fn (bx Box) slices(scale f64) BoxIterator{
 	a:=bx.anchor.floor(scale)
 	b:=bx.corner().ceil(scale)
-	sz:=point_new(scale,scale)
 	return BoxIterator{
 		index:0
 		current:a.clone(),
