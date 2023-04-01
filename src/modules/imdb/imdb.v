@@ -2,9 +2,45 @@ module imdb
 import uuid {v0}
 import json
 
-pub struct Record{
+pub struct TypedRecord[T]{
+	pub mut:
 	id string
+	data T
 }
+pub fn typed_record_from_json[T](s string) TypedRecord[T]{
+	r:=record_from_json(s)
+	tr:=TypedRecord[T]{
+		id:r.id
+		data:r.cast[T]()
+	}
+	return tr
+}
+pub struct Record{
+	pub mut:
+	id string
+	data string
+}
+pub fn record_from_json(s string) Record{
+	mut r:=json.decode(Record,s) or {
+		panic("no json for $s")
+	}
+	r.data=s
+	if r.id == '' {
+		r.id=v0()
+		r.data=json.encode(r)
+	}
+	return r
+}
+pub fn (r Record) id() string{
+	return r.id
+}
+pub fn (r Record) cast[T]() T{
+	d:=json.decode(T,r.data) or {
+		panic("no json for ${r.data}")
+	}
+	return d
+}
+
 pub struct Event{
 	event_type EventType
 	id string
@@ -94,9 +130,28 @@ pub fn (mut db InMemDb) remove(record string) {
 	db.remove_from_indexes(record)
     db.broadcast_event("remove", record)
 }
-pub fn (mut db InMemDb) update(id string, updateFn fn(json string) string) {}
-pub fn (db InMemDb) find_by_indexes(index_names []string, index_value string) {}
-pub fn (db InMemDb) find_by_index(index_name string, index_value string) {}
+pub fn (mut db InMemDb) update(id string, update_fn fn(json string) string) {
+
+      record := db.data[id]
+      db.data.delete(id)
+      db.remove_from_indexes(record)
+
+      updated_record_string := update_fn(record)
+	  updated_record:=record_from_json(updated_record_string)
+      db.data[updated_record.id] = updated_record_string
+      db.index(updated_record_string)
+
+      db.broadcast_event('update', updated_record_string)
+}
+pub fn (db InMemDb) find_by_indexes(index_names []string, index_value string) {
+	//TODO
+}
+pub fn (db InMemDb) find_by_index(index_name string, index_value string) []string{
+	// index_value:=db.indexers[index_name]
+	return db.indexes[index_name][index_value].map( fn[db](id string) string{
+		return db.data[id]
+	})
+}
 
 pub fn (mut db InMemDb) index(record string) {
 	ids:=db.indexers["id"](record)
