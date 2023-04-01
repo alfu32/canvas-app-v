@@ -1,7 +1,7 @@
 module range
 /// import math
 
-type Numeric = i8|u8|i16|u16|i32|u32|f32|i64|u64|f64
+type Numeric = i8|u8|i16|u16|int|u32|f32|i64|u64|f64
 /// pub fn floor(n Numeric,s Numeric) Numeric{
 /// 	return math.floor(n/s)*s
 /// }
