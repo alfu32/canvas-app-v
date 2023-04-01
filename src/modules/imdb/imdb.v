@@ -62,7 +62,7 @@ pub struct IndexedJsonStore{
 	data map[string]string
 	name string
 }
-pub fn indexer_on_field[T](val fn(r T) []string) fn (e string) []string{
+pub fn typed_indexer[T](val fn(r T) []string) fn (e string) []string{
 	return fn [val] [T](e string) []string{
 
 		r:=json.decode(T,e) or {
@@ -80,7 +80,7 @@ pub fn create_db(name string) IndexedJsonStore {
 		indexers:map[string]fn (e string) []string{}
 		subscribers:map[string][]fn (e string)
 	}
-	db.index_by("id",indexer_on_field[Record](fn (r Record) []string{
+	db.index_by("id",typed_indexer[Record](fn (r Record) []string{
 	 	mut ids:=[]string{}
 		ids<<r.id
 		return ids
