@@ -1,9 +1,9 @@
 module point_test
-import geometry {Point,Transformer}
-import math { sqrt,atan2 }
+import geometry
+import math
 
 fn test_point_create(){
-	p := Point{
+	p := geometry.Point{
 		10,20
 	}
 	println(p.string())
@@ -11,7 +11,7 @@ fn test_point_create(){
 	assert p.y == 20
 }
 fn test_point_clone(){
-	mut p := Point{
+	mut p := geometry.Point{
 		10,20
 	}
 	mut q:=p.clone()
@@ -26,10 +26,10 @@ fn test_point_clone(){
 	println(&q)
 }
 fn test_point_morph(){
-	mut p := Point{
+	mut p := geometry.Point{
 		10,20
 	}
-	mut q:=p.morph(Transformer{
+	mut q:=p.morph(geometry.Transformer2D{
 		fn (x f64) f64 {return x+1}
 		fn (x f64) f64 {return x*x}
 	})
@@ -43,7 +43,7 @@ fn test_point_morph(){
 	assert &p != &q
 }
 fn test_point_isomorph(){
-	mut p := Point{
+	mut p := geometry.Point{
 		10,20
 	}
 	mut q:=p.isomorph(fn (x f64) f64{return x+1})
@@ -57,7 +57,7 @@ fn test_point_isomorph(){
 	assert &p != &q
 }
 fn test_point_add(){
-	mut p := Point{
+	mut p := geometry.Point{
 		10,20
 	}
 	mut q:=p.add(p)
@@ -71,7 +71,7 @@ fn test_point_add(){
 	assert &p != &q
 }
 fn test_point_sub(){
-	mut p := Point{
+	mut p := geometry.Point{
 		10,20
 	}
 	mut q:=p.sub(p)
@@ -85,7 +85,7 @@ fn test_point_sub(){
 	assert &p != &q
 }
 fn test_point_scale(){
-	mut p := Point{
+	mut p := geometry.Point{
 		10,20
 	}
 	mut q:=p.scale(p)
@@ -99,7 +99,7 @@ fn test_point_scale(){
 	assert &p != &q
 }
 fn test_point_mul(){
-	mut p := Point{
+	mut p := geometry.Point{
 		10,20
 	}
 	mut q:=p.mul(2)
@@ -113,10 +113,10 @@ fn test_point_mul(){
 	assert &p != &q
 }
 fn test_point_dot(){
-	mut p := Point{
+	mut p := geometry.Point{
 		3,4
 	}
-	mut q := Point{
+	mut q := geometry.Point{
 		5,6
 	}
 	mut d:=p.dot(q)
@@ -128,7 +128,7 @@ fn test_point_dot(){
 	assert d==39
 }
 fn test_point_len2(){
-	mut p := Point{
+	mut p := geometry.Point{
 		3,4
 	}
 	mut q:=p.len2()
@@ -139,7 +139,7 @@ fn test_point_len2(){
 	assert q==25
 }
 fn test_point_len(){
-	mut p := Point{
+	mut p := geometry.Point{
 		3,4
 	}
 	mut q:=p.len()
@@ -150,7 +150,7 @@ fn test_point_len(){
 	assert q==5
 }
 fn test_point_norm(){
-	mut p := Point{
+	mut p := geometry.Point{
 		1,1
 	}
 	mut q:=p.norm()
@@ -162,39 +162,39 @@ fn test_point_norm(){
 	assert q.y==math.sqrt2/2
 }
 fn test_point_rad(){
-	mut p := Point{
+	mut p := geometry.Point{
 		1,1
 	}
 	println(p.rad())
 	assert p.rad()==math.pi_4
-	p = Point{
+	p = geometry.Point{
 		-1,1
 	}
 	println(p.rad())
 	assert p.rad()==math.pi_4*3
-	p = Point{
+	p = geometry.Point{
 		-1,-1
 	}
 	println(p.rad())
 	assert p.rad()==math.pi_4*5
-	p = Point{
+	p = geometry.Point{
 		1,-1
 	}
 	println(p.rad())
 	assert p.rad()==math.pi_4*7
-	p = Point{
+	p = geometry.Point{
 		1,math.sqrt_3
 	}
 	println(p.rad())
 	assert p.rad()==math.pi/3
-	p = Point{
+	p = geometry.Point{
 		-1,math.sqrt_3
 	}
 	println(p.rad())
 	println(2*math.pi/3)
 	println(math.degrees(p.rad()))
 	assert math.tolerance(p.rad(),2*math.pi/3,0.1)
-	p = Point{
+	p = geometry.Point{
 		1,-math.sqrt_3
 	}
 	println(p.rad())
@@ -202,37 +202,37 @@ fn test_point_rad(){
 	assert p.rad()==5*math.pi/3
 }
 fn test_point_deg(){
-	mut p := Point{
+	mut p := geometry.Point{
 		1,1
 	}
 	println(p.deg())
 	assert p.deg()==45
-	p = Point{
+	p = geometry.Point{
 		-1,1
 	}
 	println(p.deg())
 	assert p.deg()==135
-	p = Point{
+	p = geometry.Point{
 		-1,-1
 	}
 	println(p.deg())
 	assert p.deg()==225
-	p = Point{
+	p = geometry.Point{
 		1,-1
 	}
 	println(p.deg())
 	assert p.deg()==315
-	p = Point{
+	p = geometry.Point{
 		1,math.sqrt_3
 	}
 	println(p.deg())
 	assert math.tolerance(p.deg(),60,0.1)
-	p = Point{
+	p = geometry.Point{
 		-1,math.sqrt_3
 	}
 	println(p.deg())
 	assert math.tolerance(p.deg(),120,0.1)
-	p = Point{
+	p = geometry.Point{
 		1,-math.sqrt_3
 	}
 	println(p.deg())
@@ -240,7 +240,7 @@ fn test_point_deg(){
 	assert math.tolerance(p.deg(),300,0.1)
 }
 fn test_point_to_polar(){
-	mut p := Point{
+	mut p := geometry.Point{
 		1,1
 	}
 	mut q:=p.to_polar()
@@ -253,7 +253,7 @@ fn test_point_to_polar(){
 	assert a==45
 }
 fn test_point_to_orthogonal(){
-	mut p := Point{
+	mut p := geometry.Point{
 		1,1
 	}
 	mut q:=p.to_polar()
@@ -267,7 +267,7 @@ fn test_point_to_orthogonal(){
 	assert math.tolerance(p.y,1,0.1)
 }
 fn test_point_round(){
-	mut p := Point{
+	mut p := geometry.Point{
 		1234,5678
 	}
 	mut u:=p.round(10)
@@ -287,7 +287,7 @@ fn test_point_round(){
 	assert w.y==6000
 }
 fn test_point_floor(){
-	mut p := Point{
+	mut p := geometry.Point{
 		1234,5678
 	}
 	mut u:=p.floor(10)
@@ -307,7 +307,7 @@ fn test_point_floor(){
 	assert w.y==5000
 }
 fn test_point_ceil(){
-	mut p := Point{
+	mut p := geometry.Point{
 		1234,5678
 	}
 	mut u:=p.ceil(10)

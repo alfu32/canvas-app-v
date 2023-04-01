@@ -1,63 +1,5 @@
 module imdb
-import uuid {v0}
 import json
-
-pub struct TypedRecord[T]{
-	pub mut:
-	id string
-	data T
-}
-pub fn typed_record_from_json[T](s string) TypedRecord[T]{
-	r:=record_from_json(s)
-	tr:=TypedRecord[T]{
-		id:r.id
-		data:r.cast[T]()
-	}
-	return tr
-}
-pub struct Record{
-	pub mut:
-	id string
-	data string
-}
-pub fn record_from_json(s string) Record{
-	mut r:=json.decode(Record,s) or {
-		panic("no json for $s")
-	}
-	r.data=s
-	if r.id == '' {
-		r.id=v0()
-		r.data=json.encode(r)
-	}
-	return r
-}
-pub fn (r Record) id() string{
-	return r.id
-}
-pub fn (r Record) cast[T]() T{
-	d:=json.decode(T,r.data) or {
-		panic("no json for ${r.data}")
-	}
-	return d
-}
-
-pub struct Event{
-	event_type EventType
-	id string
-	record string
-}
-
-pub enum EventType{
-	event_add
-	event_remove
-	event_update
-	event_index
-	event_remove_from_index
-}
-pub type Indexer =  fn (e string) []string
-pub type Subscription =  fn (e string)
-pub type MapOfStrings = map[string][]string
-pub type MapOfMapOfStrings = map[string]MapOfStrings
 
 pub struct IndexedJsonStore{
 	pub mut:
@@ -149,7 +91,7 @@ pub fn (mut db IndexedJsonStore) update(id string, update_fn fn(json string) str
       db.broadcast_event('update', updated_record_string)
 }
 pub fn (db IndexedJsonStore) filter(ff fn (id string,ent string) bool) []string {
-	mut results:=[]string
+	mut results:=[]string{}
 	for id,data in db.data {
 		if ff(id,data) {
 			results<<data
@@ -158,7 +100,7 @@ pub fn (db IndexedJsonStore) filter(ff fn (id string,ent string) bool) []string 
 	return results
 }
 pub fn (db IndexedJsonStore) find_by_indexes(index_names []string, index_value string) []string {
-	mut results:=[]string
+	mut results:=[]string{}
 	for index_name in index_names {
 		results<<db.find_by_index(index_name,index_value)
 	}

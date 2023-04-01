@@ -1,10 +1,12 @@
 module geometry
-import math { sqrt,atan2 }
+import math
+
+pub type Transformer = fn(f64) f64
 [heap]
-pub struct Transformer {
+pub struct Transformer2D {
 	pub:
-	x fn(f64) f64
-	y fn(f64) f64
+	x Transformer
+	y Transformer
 }
 
 [heap]
@@ -26,7 +28,7 @@ pub fn (p Point) clone() Point{
 	}
 	return q
 }
-pub fn (p Point) morph(v Transformer) Point{
+pub fn (p Point) morph(v Transformer2D) Point{
 	mut q:=Point{
 		x:v.x(p.x)
 		y:v.y(p.y)
@@ -34,7 +36,7 @@ pub fn (p Point) morph(v Transformer) Point{
 	return q
 }
 pub fn (p Point) isomorph(f fn(x f64) f64) Point{
-	return p.morph(Transformer{f,f})
+	return p.morph(Transformer2D{f,f})
 }
 pub fn (p Point) add(o Point) Point{
 	mut q:=Point{
@@ -71,14 +73,14 @@ pub fn (p Point) len2() f64{
 	return p.dot(p)
 }
 pub fn (p Point) len() f64{
-	return sqrt(p.len2())
+	return math.sqrt(p.len2())
 }
 pub fn (p Point) norm() Point{
 	r := p.len()
 	return p.mul(1/r)
 }
 pub fn (p Point) rad() f64{
-	a := atan2(p.y,p.x)
+	a := math.atan2(p.y,p.x)
 	if a>0 {
 		return a
 	} else {

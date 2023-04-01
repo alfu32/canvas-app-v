@@ -1,8 +1,8 @@
 module range_test
-import range {RangeIterator}
+import range
 
 fn test_range_create(){
-	mut ri := RangeIterator{
+	mut ri := range.RangeIterator{
 		start:1
 		end:100
 		step: 10
@@ -12,7 +12,7 @@ fn test_range_create(){
 	assert ri.start == 1
 }
 fn test_range_iterate(){
-	mut ri := RangeIterator{
+	mut ri := range.RangeIterator{
 		start:1
 		end:100
 		step: 10

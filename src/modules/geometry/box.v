@@ -1,6 +1,4 @@
 module geometry
-import geometry {Point,Transformer}
-import range {RangeIterator} 
 
 [heap]
 pub struct BoxIterator {

@@ -32,7 +32,7 @@ fn test_record_from_json(){
 
 	println(r2)
 	assert r2.id != ""
-	assert r2.id.len == 39
+	assert r2.id.len == 36
 
 }
 fn test_record_cast(){

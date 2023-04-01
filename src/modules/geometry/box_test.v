@@ -1,5 +1,5 @@
 module box_test
-import geometry {Point,Transformer,Box,BoxIterator}
+import geometry {Point,Transformer2D,Box,BoxIterator}
 import math { sqrt,atan2 }
 
 fn test_box_create(){
