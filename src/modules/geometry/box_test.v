@@ -74,12 +74,21 @@ fn test_box_for_each_slice(){
 
 	assert count==40
 }
+fn test_box_all_slices(){
+	bx := Box{Point{10,20},Point{100,75}}
+	println(bx.string())
+	slices:=bx.all_slices(20)
+
+	println(slices)
+
+	assert slices.len==40
+}
 fn test_box_iterator(){
 	bi := BoxIterator{start:Point{10,20},end:Point{100,75},step:Point{20,20}}
 	mut count:=0
 
 	for value in bi {
-		println("iter[]=[${value}]")
+		// println("iter[]=[${value}]")
 		count++
 	}
 

@@ -101,6 +101,13 @@ pub fn (bx Box) slices(scale f64) BoxIterator{
 		step:Point{scale,scale}
 	}
 }
+pub fn (bx Box) all_slices(scale f64) []Box{
+	mut boxes:=[]Box{}
+	for box in bx.slices(scale) {
+		boxes<<box
+	}
+	return boxes
+}
 
 pub fn (b Box) string() string{
 	return "Box{${b.anchor.string()},${b.size.string()}}"
