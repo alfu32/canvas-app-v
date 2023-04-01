@@ -57,7 +57,6 @@ pub enum EventType{
 pub type Indexer =  fn (e string) []string
 pub type Subscription =  fn (e string)
 pub type MapOfMapOfStrings = map[string]map[string][]string
-pub type MapList[T] = map[string][]T
 
 pub struct IndexedJsonStore{
 	pub mut:
