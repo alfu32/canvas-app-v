@@ -56,13 +56,14 @@ pub enum EventType{
 }
 pub type Indexer =  fn (e string) []string
 pub type Subscription =  fn (e string)
-pub type MapOfMapOfStrings = map[string]map[string][]string
+pub type MapOfStrings = map[string][]string
+pub type MapOfMapOfStrings = map[string]MapOfStrings
 
 pub struct IndexedJsonStore{
 	pub mut:
 	indexes map[string]map[string][]string
 	indexers map[string]Indexer
-	subscribers map[string][]Subscription
+	subscriptions map[string][]Subscription
 	data map[string]string
 	name string
 }
@@ -82,7 +83,7 @@ pub fn create_db(name string) IndexedJsonStore {
 		name: name
 		indexes:map[string]map[string][]string{}
 		indexers:map[string]Indexer{}
-		subscribers:map[string][]Subscription{}
+		subscriptions:map[string][]Subscription{}
 	}
 	db.index_by("id",typed_indexer[Record](fn (r Record) []string{
 	 	mut ids:=[]string{}
@@ -105,7 +106,7 @@ pub fn (db IndexedJsonStore) string() string{
 	IndexedJsonStore{
 		indexes ${db.indexes}
 		indexers ${db.indexers}
-		subscribers ${db.subscribers} 
+		subscriptions ${db.subscriptions} 
 		name ${db.name} 
 		data ${db.data} 
 	}
@@ -115,10 +116,10 @@ pub fn (mut db IndexedJsonStore) index_by(index_name string,index_fn fn(record s
 	db.indexers[index_name]=(index_fn)
 }
 pub fn (mut db IndexedJsonStore) on(eventType string, callback fn (json string)) {
-	if !(eventType in db.subscribers.keys()) {
-		db.subscribers[eventType]=[]Subscription{}
+	if !(eventType in db.subscriptions.keys()) {
+		db.subscriptions[eventType]=[]Subscription{}
 	}
-	db.subscribers[eventType]<<(callback)
+	db.subscriptions[eventType]<<(callback)
 }
 
 pub fn (mut db IndexedJsonStore) add(record string) {
