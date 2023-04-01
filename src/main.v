@@ -1,6 +1,7 @@
 module main
-
+import geometry
 
 fn main() {
-	println('Hello World!')
+	b:=geometry.Box{}
+	println('Hello World! ${b.string()}')
 }
