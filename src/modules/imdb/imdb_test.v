@@ -1,5 +1,5 @@
 module imdb_test
-import imdb {InMemDb,create_db,Record,EventType,record_from_json,typed_record_from_json}
+import imdb {IndexedJsonStore,create_db,Record,EventType,record_from_json,typed_record_from_json}
 import geometry { Box }
 import json
 
@@ -54,7 +54,7 @@ fn test_imdb_create(){
 	assert 1==1
 }
 
-fn before_each() InMemDb{
+fn before_each() IndexedJsonStore{
 	mut a:=create_db("vspace")
 	return a
 }

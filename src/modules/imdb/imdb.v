@@ -54,7 +54,7 @@ pub enum EventType{
 	event_index
 	event_remove_from_index
 }
-pub struct InMemDb{
+pub struct IndexedJsonStore{
 	pub mut:
 	indexes map[string]map[string][]string
 	indexers map[string]fn (e string) []string
@@ -73,8 +73,8 @@ pub fn indexer_on_field[T](val fn(r T) []string) fn (e string) []string{
 		return values
 	}
 }
-pub fn create_db(name string) InMemDb {
-	mut db:=InMemDb{
+pub fn create_db(name string) IndexedJsonStore {
+	mut db:=IndexedJsonStore{
 		name: name
 		indexes:map[string]map[string][]string{}
 		indexers:map[string]fn (e string) []string{}
@@ -96,9 +96,9 @@ pub fn create_db(name string) InMemDb {
 	return db
 }
 
-pub fn (db InMemDb) string() string{
+pub fn (db IndexedJsonStore) string() string{
 	return "
-	InMemDb{
+	IndexedJsonStore{
 		indexes ${db.indexes}
 		indexers ${db.indexers}
 		subscribers ${db.subscribers} 
@@ -107,30 +107,30 @@ pub fn (db InMemDb) string() string{
 	}
 	"
 }
-pub fn (mut db InMemDb) index_by(index_name string,index_fn fn(record string) []string ){
+pub fn (mut db IndexedJsonStore) index_by(index_name string,index_fn fn(record string) []string ){
 	db.indexers[index_name]=(index_fn)
 }
-pub fn (mut db InMemDb) on(eventType string, callback fn (json string)) {
+pub fn (mut db IndexedJsonStore) on(eventType string, callback fn (json string)) {
 	if !(eventType in db.subscribers.keys()) {
 		db.subscribers[eventType]=[]fn (e string){}
 	}
 	db.subscribers[eventType]<<(callback)
 }
 
-pub fn (mut db InMemDb) add(record string) {
+pub fn (mut db IndexedJsonStore) add(record string) {
 	  ids:=db.indexers["id"](record)
       db.data[ids[0]] = record
       db.index(record)
       db.broadcast_event("add", record)
 }
-pub fn (mut db InMemDb) remove(record string) {
+pub fn (mut db IndexedJsonStore) remove(record string) {
 	ids:=db.indexers["id"](record)
 	id:=ids[0]
 	db.data.delete(id)
 	db.remove_from_indexes(record)
     db.broadcast_event("remove", record)
 }
-pub fn (mut db InMemDb) update(id string, update_fn fn(json string) string) {
+pub fn (mut db IndexedJsonStore) update(id string, update_fn fn(json string) string) {
 
       record := db.data[id]
       db.data.delete(id)
@@ -143,20 +143,30 @@ pub fn (mut db InMemDb) update(id string, update_fn fn(json string) string) {
 
       db.broadcast_event('update', updated_record_string)
 }
-pub fn (db InMemDb) find_by_indexes(index_names []string, index_value string) {
-	results:=[]string
-	for index_name in index_names {
-		results<<db.find_by_index(index_name,indexValue)
+pub fn (db IndexedJsonStore) filter(ff fn (id string,ent string) bool) []string {
+	mut results:=[]string
+	for id,data in db.data {
+		if ff(id,data) {
+			results<<data
+		}
 	}
+	return results
 }
-pub fn (db InMemDb) find_by_index(index_name string, index_value string) []string{
+pub fn (db IndexedJsonStore) find_by_indexes(index_names []string, index_value string) []string {
+	mut results:=[]string
+	for index_name in index_names {
+		results<<db.find_by_index(index_name,index_value)
+	}
+	return results
+}
+pub fn (db IndexedJsonStore) find_by_index(index_name string, index_value string) []string{
 	// index_value:=db.indexers[index_name]
 	return db.indexes[index_name][index_value].map( fn[db](id string) string{
 		return db.data[id]
 	})
 }
 
-pub fn (mut db InMemDb) index(record string) {
+pub fn (mut db IndexedJsonStore) index(record string) {
 	ids:=db.indexers["id"](record)
 	id:=ids[0]
 	for index_name,index_fn in db.indexers {
@@ -169,7 +179,7 @@ pub fn (mut db InMemDb) index(record string) {
 		}
 	}
 }
-pub fn (mut db InMemDb) remove_from_indexes(record string) {
+pub fn (mut db IndexedJsonStore) remove_from_indexes(record string) {
 
 	ids:=db.indexers["id"](record)
 	id:=ids[0]
@@ -180,4 +190,4 @@ pub fn (mut db InMemDb) remove_from_indexes(record string) {
 	}
 }
 
-pub fn (db InMemDb) broadcast_event(eventType string, eventData string) {}
+pub fn (db IndexedJsonStore) broadcast_event(eventType string, eventData string) {}
