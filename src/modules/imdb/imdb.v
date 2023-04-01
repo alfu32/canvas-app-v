@@ -144,7 +144,10 @@ pub fn (mut db InMemDb) update(id string, update_fn fn(json string) string) {
       db.broadcast_event('update', updated_record_string)
 }
 pub fn (db InMemDb) find_by_indexes(index_names []string, index_value string) {
-	//TODO
+	results:=[]string
+	for index_name in index_names {
+		results<<db.find_by_index(index_name,indexValue)
+	}
 }
 pub fn (db InMemDb) find_by_index(index_name string, index_value string) []string{
 	// index_value:=db.indexers[index_name]
