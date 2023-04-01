@@ -95,19 +95,19 @@ pub fn (mut db InMemDb) remove(record string) {
     db.broadcast_event("remove", record)
 }
 pub fn (mut db InMemDb) update(id string, updateFn fn(json string) string) {}
-pub fn (db InMemDb) find_by_indexes(indexNames []string, indexValue string) {}
-pub fn (db InMemDb) find_by_index(indexName string, indexValue string) {}
+pub fn (db InMemDb) find_by_indexes(index_names []string, index_value string) {}
+pub fn (db InMemDb) find_by_index(index_name string, index_value string) {}
 
 pub fn (mut db InMemDb) index(record string) {
 	ids:=db.indexers["id"](record)
 	id:=ids[0]
-	for k,v in db.indexers {
-		println("$k => $v")
-		if !(k in db.indexes.keys()) {
-			db.indexes[k]=map[string][]string{}
+	for index_name,index_fn in db.indexers {
+		println("$index_name => $index_fn")
+		if !(index_name in db.indexes.keys()) {
+			db.indexes[index_name]=map[string][]string{}
 		}
-		for val in v(record){
-			db.indexes[k][val]<<id
+		for index_value in index_fn(record){
+			db.indexes[index_name][index_value]<<id
 		}
 	}
 }
@@ -115,13 +115,9 @@ pub fn (mut db InMemDb) remove_from_indexes(record string) {
 
 	ids:=db.indexers["id"](record)
 	id:=ids[0]
-	for k,v in db.indexes {
-		println("$k => $v")
-		if !(k in db.indexes.keys()) {
-			db.indexes[k]=map[string][]string{}
-		}
-		for val in v(record){
-			db.indexes[k][val]=db.indexes[k][val].filter( fn[id](cid){return cid!=id})
+	for index_name,index_map in db.indexes {
+		for index_value,id_list in index_map {
+			db.indexes[index_name][index_value]=id_list.filter( fn[id](cid string) bool{return cid!=id})
 		}
 	}
 }

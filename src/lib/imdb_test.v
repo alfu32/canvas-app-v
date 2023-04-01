@@ -64,7 +64,7 @@ fn test_imdb_remove(){
 	db.remove('{"id":"werwer","anchor":{"x":10,"y":20},"size":{"x":20,"y":40}}')
 	println(db.string())
 	assert db.data.values().len == 3
-	assert db.indexes["id"].len == 3
+	assert db.indexes["id"]["werwer"].len == 0
 
 }
 fn test_imdb_update(){
