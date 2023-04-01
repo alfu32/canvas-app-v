@@ -54,7 +54,7 @@ pub fn (db IndexedJsonStore) string() string{
 	}
 	"
 }
-pub fn (mut db IndexedJsonStore) index_by(index_name string,index_fn fn(record string) []string ){
+pub fn (mut db IndexedJsonStore) index_by(index_name string,index_fn Indexer ){
 	db.indexers[index_name]=(index_fn)
 }
 pub fn (mut db IndexedJsonStore) on(eventType string, callback fn (json string)) {
@@ -77,7 +77,7 @@ pub fn (mut db IndexedJsonStore) remove(record string) {
 	db.remove_from_indexes(record)
     db.broadcast_event("remove", record)
 }
-pub fn (mut db IndexedJsonStore) update(id string, update_fn fn(json string) string) {
+pub fn (mut db IndexedJsonStore) update(id string, update_fn Updater) {
 
       record := db.data[id]
       db.data.delete(id)
@@ -117,7 +117,7 @@ pub fn (mut db IndexedJsonStore) index(record string) {
 	ids:=db.indexers["id"](record)
 	id:=ids[0]
 	for index_name,index_fn in db.indexers {
-		println("$index_name => $index_fn")
+		// println("$index_name => $index_fn")
 		if !(index_name in db.indexes.keys()) {
 			db.indexes[index_name]=map[string][]string{}
 		}

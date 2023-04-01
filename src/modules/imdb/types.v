@@ -58,3 +58,4 @@ pub type Indexer =  fn (e string) []string
 pub type Subscription =  fn (e string)
 pub type MapOfStrings = map[string][]string
 pub type MapOfMapOfStrings = map[string]MapOfStrings
+pub type Updater =  fn (e string) string
