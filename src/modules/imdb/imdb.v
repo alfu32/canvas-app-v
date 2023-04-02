@@ -57,12 +57,6 @@ pub fn (db IndexedJsonStore) string() string{
 pub fn (mut db IndexedJsonStore) index_by(index_name string,index_fn Indexer ){
 	db.indexers[index_name]=(index_fn)
 }
-pub fn (mut db IndexedJsonStore) on(eventType string, callback fn (json string)) {
-	if !(eventType in db.subscriptions.keys()) {
-		db.subscriptions[eventType]=[]Subscription{}
-	}
-	db.subscriptions[eventType]<<(callback)
-}
 
 pub fn (mut db IndexedJsonStore) add(record string) {
 	  id:=record_from_json(record).id
@@ -127,7 +121,7 @@ pub fn (mut db IndexedJsonStore) index(record string) {
 pub fn (mut db IndexedJsonStore) remove_from_indexes(record string) {
 
 	id:=record_from_json(record).id
-	for index_name,mut index_map in db.indexes {
+	for _,mut index_map in db.indexes {
 		mut to_delete:=[]string{}
 		for index_value,id_list in index_map {
 			// println("searching $id under $index_value in $id_list")
@@ -142,4 +136,19 @@ pub fn (mut db IndexedJsonStore) remove_from_indexes(record string) {
 	}
 }
 
-pub fn (db IndexedJsonStore) broadcast_event(eventType string, eventData string) {}
+/**
+ * @param {string} event_type can take the following values
+ *   add|remove|update
+ * @param {Subscription} subscription receives event_data and returns nothing
+ **/
+pub fn (mut db IndexedJsonStore) on(event_type string, subscription Subscription) {
+	if !(event_type in db.subscriptions.keys()) {
+		db.subscriptions[event_type]=[]Subscription{}
+	}
+	db.subscriptions[event_type]<<subscription
+}
+pub fn (db IndexedJsonStore) broadcast_event(event_type string, event_data string) {
+	for sub in db.subscriptions[event_type] {
+		sub(event_data)
+	}
+}
