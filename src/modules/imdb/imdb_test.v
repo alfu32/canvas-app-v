@@ -133,23 +133,56 @@ fn test_imdb_find_by_index(){
 	
 }
 fn test_imdb_index(){
+	println('----------------------------------------' + @MOD + '.' + @FN)
+	println('file: ' + @FILE + ':' + @LINE + ' | fn: ' + @MOD + '.' + @FN)
 	mut db:=create_db("vspace")
-	db.index_by("box",fn(str string)[]string{
+	index_by_box:=fn(str string)[]string{
 		record:=record_from_json(str)
 		box:=record.cast[Box]()
 		return box.all_slices(20).map( fn (slice Box) string {
 			return "${slice.anchor.x},${slice.anchor.y}@20"
 		})
-	})
+	}
+	db.index_by("box",index_by_box)
+	boxes:=[
+		'{"id":"werwer","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}'
+		'{"id":"asdf","anchor":{"x":10,"y":20},"size":{"x":10,"y":10}}'
+		'{"id":"xcvxc","anchor":{"x":15,"y":10},"size":{"x":40,"y":40}}'
+		'{"id":"tyuty","anchor":{"x":20,"y":90},"size":{"x":20,"y":20}}'
+		'{"id":"acpi","anchor":{"x":80,"y":20},"size":{"x":20,"y":40}}'
+	]
+	println(boxes)
+	for i,bx in boxes {
+		println("indexing [$i] := $bx ---------------------------")
+		db.add(bx)
+		bx_index_values:=index_by_box(bx)
+		println("after add [$i]bx_index_values ---------------------------")
+		println(bx_index_values)
+		println("after add [$i]bx_index_values ---------------------------")
+		println(db.indexes["box"].values())
+		mut ids:=map[string]string{}
+		for ix, ida in db.indexes["box"].values(){
+			assert ida.len==1
+			ids[ida[0]]=ida[0]
+		}
+		assert ids.keys().len == 1
+		assert ids.keys()[0] == record_from_json(bx).id
+		db.remove(bx)
+		println("after delete [$i]bx_index_values ---------------------------")
+		println(db.indexes["box"].values())
 
-	db.add('{"id":"werwer","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}')
-	db.add('{"id":"asdf","anchor":{"x":10,"y":20},"size":{"x":10,"y":10}}')
-	db.add('{"id":"xcvxc","anchor":{"x":15,"y":10},"size":{"x":40,"y":40}}')
-	db.add('{"id":"tyuty","anchor":{"x":20,"y":90},"size":{"x":20,"y":20}}')
-	db.add('{"id":"acpi","anchor":{"x":80,"y":20},"size":{"x":20,"y":40}}')
-	println('file: ' + @FILE + ':' + @LINE + ' | fn: ' + @MOD + '.' + @FN)
-	println(db.indexes["id"])
-	assert 1==1
+		ids=map[string]string{}
+		for ix, ida in db.indexes["box"].values(){
+			assert ida.len==0
+		}
+		println(ids)
+		println(ids.keys())
+		assert ids.keys().len == 0
+	}
+
+	// println('file: ' + @FILE + ':' + @LINE + ' | fn: ' + @MOD + '.' + @FN)
+
+	assert 1==2
 
 }
 fn test_imdb_remove_from_indexes(){

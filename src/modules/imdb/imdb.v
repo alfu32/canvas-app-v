@@ -132,7 +132,12 @@ pub fn (mut db IndexedJsonStore) remove_from_indexes(record string) {
 	id:=ids[0]
 	for index_name,index_map in db.indexes {
 		for index_value,id_list in index_map {
-			db.indexes[index_name][index_value]=id_list.filter( fn[id](cid string) bool{return cid!=id})
+			new_index_array:=id_list.filter( fn[id](cid string) bool{return cid!=id})
+			if new_index_array.len == 0 {
+				db.indexes[index_name].delete(index_value)
+			}else {
+				db.indexes[index_name][index_value]=new_index_array
+			}
 		}
 	}
 }
