@@ -132,7 +132,7 @@ fn test_imdb_find_by_index(){
 	assert b.len == 2
 	
 }
-fn test_imdb_index(){
+fn test_imdb_index_and_remove_from_indexes(){
 	println('----------------------------------------' + @MOD + '.' + @FN)
 	println('file: ' + @FILE + ':' + @LINE + ' | fn: ' + @MOD + '.' + @FN)
 	mut db:=create_db("vspace")
@@ -153,13 +153,13 @@ fn test_imdb_index(){
 	]
 	println(boxes)
 	for i,bx in boxes {
-		println("indexing [$i] := $bx ---------------------------")
+		println("indexing $bx ----------------------------------------------------------------")
 		db.add(bx)
 		bx_index_values:=index_by_box(bx)
-		println("after add [$i]bx_index_values ---------------------------")
+		println("after add $bx bx_index_values ---------------------------")
 		println(bx_index_values)
-		println("after add [$i]bx_index_values ---------------------------")
-		println(db.indexes["box"].values())
+		println("after add $bx db.indexes ---------------------------")
+		println(db.indexes)
 		mut ids:=map[string]string{}
 		for ix, ida in db.indexes["box"].values(){
 			assert ida.len==1
@@ -168,8 +168,8 @@ fn test_imdb_index(){
 		assert ids.keys().len == 1
 		assert ids.keys()[0] == record_from_json(bx).id
 		db.remove(bx)
-		println("after delete [$i]bx_index_values ---------------------------")
-		println(db.indexes["box"].values())
+		println("after delete $bx db.indexes[box].values() ---------------------------")
+		println(db.indexes)
 
 		ids=map[string]string{}
 		for ix, ida in db.indexes["box"].values(){
@@ -182,12 +182,9 @@ fn test_imdb_index(){
 
 	// println('file: ' + @FILE + ':' + @LINE + ' | fn: ' + @MOD + '.' + @FN)
 
-	assert 1==2
+	assert 1==1
 
 }
-fn test_imdb_remove_from_indexes(){
-
-}
-fn test_imdb_broadcast_event(){
+fn test_imdb_events(){
 
 }

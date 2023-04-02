@@ -65,14 +65,13 @@ pub fn (mut db IndexedJsonStore) on(eventType string, callback fn (json string))
 }
 
 pub fn (mut db IndexedJsonStore) add(record string) {
-	  ids:=db.indexers["id"](record)
-      db.data[ids[0]] = record
+	  id:=record_from_json(record).id
+      db.data[id] = record
       db.index(record)
       db.broadcast_event("add", record)
 }
 pub fn (mut db IndexedJsonStore) remove(record string) {
-	ids:=db.indexers["id"](record)
-	id:=ids[0]
+	id:=record_from_json(record).id
 	db.data.delete(id)
 	db.remove_from_indexes(record)
     db.broadcast_event("remove", record)
@@ -114,8 +113,7 @@ pub fn (db IndexedJsonStore) find_by_index(index_name string, index_value string
 }
 
 pub fn (mut db IndexedJsonStore) index(record string) {
-	ids:=db.indexers["id"](record)
-	id:=ids[0]
+	id:=record_from_json(record).id
 	for index_name,index_fn in db.indexers {
 		// println("$index_name => $index_fn")
 		if !(index_name in db.indexes.keys()) {
@@ -128,15 +126,17 @@ pub fn (mut db IndexedJsonStore) index(record string) {
 }
 pub fn (mut db IndexedJsonStore) remove_from_indexes(record string) {
 
-	ids:=db.indexers["id"](record)
-	id:=ids[0]
-	for index_name,index_map in db.indexes {
+	id:=record_from_json(record).id
+	for index_name,mut index_map in db.indexes {
+		mut to_delete:=[]string{}
 		for index_value,id_list in index_map {
-			new_index_array:=id_list.filter( fn[id](cid string) bool{return cid!=id})
+			// println("searching $id under $index_value in $id_list")
+			new_index_array:=id_list.filter( it!=id )
 			if new_index_array.len == 0 {
-				db.indexes[index_name].delete(index_value)
+				to_delete<<index_value
+				index_map.delete(index_value)
 			}else {
-				db.indexes[index_name][index_value]=new_index_array
+				index_map[index_value]=new_index_array
 			}
 		}
 	}
