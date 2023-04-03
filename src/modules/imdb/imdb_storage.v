@@ -1,5 +1,5 @@
 module imdb_storage
-import json
+import imdb
 import os
 
 pub struct FileIndex{
@@ -45,14 +45,14 @@ fn write_all[T](fname string,list []T){
 	}
 	f.close()
 }
-fn read_all[T](fname string) []T{
-	mut lines:= os.read_lines(fname) or {
+fn read_all(fname string) []imdb.Record{
+	mut strings:= os.read_lines(fname) or {
 		panic("ERROPEN file $fname")
-	}.map(fn (line string) T{
-		return json.decode(T,line) or {
-			panic('could not json.decode $line')
-		}
-	})
+	}
+	mut lines:=[]imdb.Record{}
+	for s in strings {
+		lines<<imdb.record_from_json(s)
+	}
 	return(lines)
 }
 

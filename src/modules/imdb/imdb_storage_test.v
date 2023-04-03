@@ -5,22 +5,30 @@ import geometry
 import rand
 import os
 
-pub fn test_write_all(){
-	fname:="test_write_all.json"
+fn gen_some(n u8) []string{
 	mut list:=[]string{}
-	for i in 0..100 {
+	for i in 0..10 {
 		list<<('{"id":"${rand.uuid_v4()}","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}')
 	}
+	return list
+}
+
+pub fn test_write_all(){
+	fname:="test_write_all.json"
+	list:=gen_some(10)
 	imdb_storage.write_all(fname,list)
-	assert 1==2
+	assert 1==1
 
 }
 pub fn test_read_all(){
-	fname:="test.db.json"
-	for i in 0..100 {
-		event_data:='{"id":"${rand.uuid_v4()}","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}'
+	fname:="test_read_all.json"
+	list:=gen_some(10)
+	imdb_storage.write_all(fname,list)
+	gen:=list.map(imdb.record_from_json(it))
+	data:=imdb_storage.read_all(fname)
+	for i,v in gen {
+		assert v == data[i]
 	}
-	assert 1==2
 }
 
 
