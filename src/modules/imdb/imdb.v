@@ -106,7 +106,7 @@ pub fn (db IndexedJsonStore) find_by_index(index_name string, index_value string
 	})
 }
 
-pub fn (mut db IndexedJsonStore) index(record string) {
+fn (mut db IndexedJsonStore) index(record string) {
 	id:=record_from_json(record).id
 	for index_name,index_fn in db.indexers {
 		// println("$index_name => $index_fn")
@@ -118,7 +118,7 @@ pub fn (mut db IndexedJsonStore) index(record string) {
 		}
 	}
 }
-pub fn (mut db IndexedJsonStore) remove_from_indexes(record string) {
+fn (mut db IndexedJsonStore) remove_from_indexes(record string) {
 
 	id:=record_from_json(record).id
 	for _,mut index_map in db.indexes {
@@ -147,7 +147,7 @@ pub fn (mut db IndexedJsonStore) on(event_type string, subscription Subscription
 	}
 	db.subscriptions[event_type]<<subscription
 }
-pub fn (db IndexedJsonStore) broadcast_event(event_type string, event_data string) {
+fn (db IndexedJsonStore) broadcast_event(event_type string, event_data string) {
 	for sub in db.subscriptions[event_type] {
 		sub(event_data)
 	}
