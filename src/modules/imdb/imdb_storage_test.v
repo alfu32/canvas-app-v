@@ -5,12 +5,39 @@ import geometry
 import rand
 import os
 
+
+fn test_create_storage_backend(){
+	fsb:=imdb_storage.create_file_storage_backend("zaz")
+	println(fsb)
+	assert 1==2
+}
+
+
 fn gen_some(n u8) []string{
 	mut list:=[]string{}
 	for i in 0..10 {
 		list<<('{"id":"${rand.uuid_v4()}","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}')
 	}
 	return list
+}
+pub interface RowMapper[T]{
+	map_from_string fn (row string) T
+}
+pub struct JsonRowMapper[T]{
+	map_from_string fn (row string) T
+}
+
+
+pub fn test_read_all_map(){
+	fname:="test_read_all.json"
+	list:=gen_some(10)
+	imdb_storage.write_all(fname,list)
+	mm:=imdb_storage.read_all_map[geometry.Box](fname,fn(s string) geometry.Box {
+		return imdb.record_from_json(s).cast[geometry.Box]()
+	})
+	println(mm)
+	assert mm.len==10
+
 }
 
 pub fn test_write_all(){
