@@ -14,11 +14,9 @@ pub struct IndexedJsonStore{
 	name string
 }
 pub fn typed_indexer[T](val fn(r T) []string) Indexer{
-	return fn [val] [T](e string) []string{
+	return fn [val] [T](e string) ![]string{
 
-		r:=json.decode(T,e) or {
-			panic("no json for ${e}")
-		}
+		r:=json.decode(T,e)!
 		mut values:=[]string{}
 		values<<val(r)
 		return values
@@ -62,30 +60,30 @@ pub fn (mut db IndexedJsonStore) index_by(index_name string,index_fn Indexer ){
 	db.indexers[index_name]=(index_fn)
 }
 
-pub fn (mut db IndexedJsonStore) add(record string) {
-	  id:=record_from_json(record).id
+pub fn (mut db IndexedJsonStore) add(record string) ! {
+	  id:=record_from_json(record)!.id
       db.data[id] = record
-      db.index(record)
-      db.broadcast_event("add", record)
+      db.index(record)!
+      db.broadcast_event("add", record)!
 }
-pub fn (mut db IndexedJsonStore) remove(record string) {
-	id:=record_from_json(record).id
+pub fn (mut db IndexedJsonStore) remove(record string) ! {
+	id:=record_from_json(record)!.id
 	db.data.delete(id)
-	db.remove_from_indexes(record)
-    db.broadcast_event("remove", record)
+	db.remove_from_indexes(record)!
+    db.broadcast_event("remove", record)!
 }
-pub fn (mut db IndexedJsonStore) update(id string, update_fn Updater) {
+pub fn (mut db IndexedJsonStore) update(id string, update_fn Updater) ! {
 
       record := db.data[id]
       db.data.delete(id)
-      db.remove_from_indexes(record)
+      db.remove_from_indexes(record)!
 
       updated_record_string := update_fn(record)
-	  updated_record:=record_from_json(updated_record_string)
+	  updated_record:=record_from_json(updated_record_string)!
       db.data[updated_record.id] = updated_record_string
-      db.index(updated_record_string)
+      db.index(updated_record_string)!
 
-      db.broadcast_event('update', updated_record_string)
+      db.broadcast_event('update', updated_record_string)!
 }
 pub fn (db IndexedJsonStore) filter(ff fn (id string,ent string) bool) []string {
 	mut results:=[]string{}
@@ -110,21 +108,21 @@ pub fn (db IndexedJsonStore) find_by_index(index_name string, index_value string
 	})
 }
 
-fn (mut db IndexedJsonStore) index(record string) {
-	id:=record_from_json(record).id
+fn (mut db IndexedJsonStore) index(record string) ! {
+	id:=record_from_json(record)!.id
 	for index_name,index_fn in db.indexers {
 		// println("$index_name => $index_fn")
 		if !(index_name in db.indexes.keys()) {
 			db.indexes[index_name]=map[string][]string{}
 		}
-		for index_value in index_fn(record){
+		for index_value in index_fn(record)!{
 			db.indexes[index_name][index_value]<<id
 		}
 	}
 }
-fn (mut db IndexedJsonStore) remove_from_indexes(record string) {
+fn (mut db IndexedJsonStore) remove_from_indexes(record string) ! {
 
-	id:=record_from_json(record).id
+	id:=record_from_json(record)!.id
 	for _,mut index_map in db.indexes {
 		mut to_delete:=[]string{}
 		for index_value,id_list in index_map {
@@ -151,8 +149,8 @@ pub fn (mut db IndexedJsonStore) on(event_type string, subscription Subscription
 	}
 	db.subscriptions[event_type]<<subscription
 }
-fn (db IndexedJsonStore) broadcast_event(event_type string, event_data string) {
+fn (db IndexedJsonStore) broadcast_event(event_type string, event_data string) ! {
 	for sub in db.subscriptions[event_type] {
-		sub(event_data)
+		sub(event_data)!
 	}
 }
