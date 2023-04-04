@@ -1,6 +1,10 @@
 module imdb
 import json
+import topodb.types{Updater,Subscription,Indexer,Record,record_from_json}
 
+pub const exports=[
+	"IndexedJsonStore"
+]
 pub struct IndexedJsonStore{
 	pub mut:
 	indexes map[string]map[string][]string
@@ -48,9 +52,9 @@ pub fn (db IndexedJsonStore) string() string{
 	IndexedJsonStore{
 		indexes ${db.indexes}
 		indexers ${db.indexers}
-		subscriptions ${db.subscriptions} 
-		name ${db.name} 
-		data ${db.data} 
+		subscriptions ${db.subscriptions}
+		name ${db.name}
+		data ${db.data}
 	}
 	"
 }

@@ -1,13 +1,20 @@
 module storage_adapter
 import os
 import json
-import imdb
+import topodb.types{Record,record_from_json}
 
+	pub const exports=[
+	"StorageAdapterError"
+	"FileStorageBackend"
+]
 pub struct StorageAdapterError{
 	Error
 	msg string
 	code int
-	cause IError
+	cause ?IError
+}
+pub fn from_ierror(err IError) StorageAdapterError{
+	return StorageAdapterError{msg:err.msg(),code:err.code(),cause:err}
 }
 pub fn (sae StorageAdapterError) msg()string{
 	return sae.msg
@@ -21,6 +28,7 @@ pub struct FileIndex{
 }
 
 pub struct FileStorageBackend{
+	is_valid bool=true
 	name string
 	index_filename string
 	data_filename string
@@ -30,49 +38,76 @@ pub struct FileStorageBackend{
 	data_file os.File
 	last u64
 }
+pub fn open_or_create(path string,default_contents string) !os.File {
+	exists:=os.exists(path)
+	mut fl:=os.File{}
+	if !exists {
+		fl= os.create(path) or {
+			panic("ECREATE ${err.msg()}")
+			// from_ierror(err)
+		}
+		os.write_file(path,default_contents)or{
+			panic("EWRITE ${err.msg()}")
+		}
+	} else {
+		fl = os.open_append(path) or {
+			panic("EAPPEND ${err.msg()}")
+			// from_ierror(err)
+		}
+	}
+	return fl
+}
+pub fn read_and_decode(path string) !map[string][]FileIndex {
+	data_string:=os.read_file(path) or {
+		println("ERR1 read_and_decode ${err.code()} ${err.msg()}")
+		// from_ierror(err)
+		"{}"
+	}
+	return json.decode(map[string][]FileIndex,data_string) or {
+		println("ERR2 read_and_decode ${err.code()} ${err.msg()}")
+		// from_ierror(err)
+		map[string][]FileIndex{}
+	}
+}
 pub fn create_file_storage_backend(name string) !FileStorageBackend{
+	mut index_filename:="${name}.db.index.json"
+	mut data_filename:="${name}.db.json"
+	mut index_file:=os.File{}
+	mut data_file:=os.File{}
+	mut is_valid:=true
+	mut index:=map[string][]FileIndex{}
+	index_file=open_or_create(index_filename,"{}") or {
+		is_valid=false
+		// from_ierror(err)
+		os.File{}
+	}
+	data_file=open_or_create(data_filename,"") or {
+		is_valid=false
+		// from_ierror(err)
+		os.File{}
+	}
+	if is_valid {
+		index=read_and_decode(index_filename) or {
+			is_valid=false
+			// from_ierror(err)
+			map[string][]FileIndex{}
+		}
+	}
+	if is_valid {
+		return FileStorageBackend{
+			is_valid
+			name
+			index_filename
+			data_filename
+			index
+			index_file
+			data_file
+			0
+		}
+	}else{
+		return IError(StorageAdapterError{code:1,msg:"could not create the storage backend",cause:none})
+	}
 
-	mut fsb:=FileStorageBackend{
-		name:name,
-		index_filename:"${name}.db.index.json",
-		data_filename:"${name}.db.json",
-		index:map[string][]FileIndex{}
-		last:0
-	}
-	fsb.index_file=os.open_file(fsb.index_filename,"w") or {
-		//panic("ERROPEN file $fsb.index_filename could not be opened because $err")
-		return IError(StorageAdapterError{
-			msg:"ERROPEN file $fsb.index_filename could not be opened because $err"
-			code:1
-			cause:err
-		})
-	}
-	fsb.data_file=os.open_append(fsb.data_filename,) or {
-		//panic("ERROPEN file $fsb.data_filename could not be opened because $err")
-		return IError(StorageAdapterError{
-			msg:"ERROPEN file $fsb.data_filename could not be opened because $err"
-			code:2
-			cause:err
-		})
-	}
-	mut index_string_json:= os.read_file(fsb.index_filename) or {
-		// panic("ERROPEN file $fsb.index_filename")
-		return IError(StorageAdapterError{
-			msg:"ERROPEN file $fsb.index_filename because $err"
-			code:3
-			cause:err
-		})
-	}
-	index_string_json= if index_string_json=="" {"{}"}else{index_string_json}
-	fsb.index=json.decode(map[string][]FileIndex,index_string_json) or {
-		panic("ERRJSON file $fsb.index_filename is not valid json")
-		return IError(StorageAdapterError{
-			msg:"ERRJSON file $fsb.index_filename is not valid json because $err"
-			code:4
-			cause:err
-		})
-	}
-	return fsb
 }
 
 pub fn open_file_storage_backend(name string) FileStorageBackend{
@@ -103,14 +138,14 @@ pub fn (mut fsb FileStorageBackend) free(){
 	fsb.index_file.close()
 	fsb.data_file.close()
 }
-pub fn (mut fsb FileStorageBackend) push(rec imdb.Record){
+pub fn (mut fsb FileStorageBackend) push(rec Record){
 	fsb.index[rec.id]<<FileIndex{pos:u64(rec.data.len)+1+fsb.last,len:u64(rec.data.len)}
 	fsb.data_file.writeln(rec.data) or {
 		panic("could not write $rec to $fsb.data_filename")
 	}
 	fsb.last=fsb.last+u64(rec.data.len)+1
 }
-pub fn (mut fsb FileStorageBackend) push_all(all []imdb.Record){
+pub fn (mut fsb FileStorageBackend) push_all(all []Record){
 	for j in all {
 		fsb.push(j)
 	}
@@ -196,13 +231,13 @@ fn write_all[T](fname string,list []T){
 	}
 	f.close()
 }
-fn read_all(fname string) []imdb.Record{
+fn read_all(fname string) []Record{
 	mut strings:= os.read_lines(fname) or {
 		panic("ERROPEN file $fname")
 	}
-	mut lines:=[]imdb.Record{}
+	mut lines:=[]Record{}
 	for s in strings {
-		lines<<imdb.record_from_json(s)
+		lines<<record_from_json(s)
 	}
 	return(lines)
 }

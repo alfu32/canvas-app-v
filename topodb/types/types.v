@@ -1,7 +1,18 @@
-module imdb
+module types
 import json
 import rand
 
+pub const exports=[
+	"RowMapper"
+	"TypedRecord"
+	"Record"
+	"EventType"
+	"Indexer"
+	"Subscription"
+	"MapOfStrings"
+	"MapOfMapOfStrings"
+	"Updater"
+]
 
 pub interface RowMapper[T]{
 	map_from_string fn (row string) T

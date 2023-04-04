@@ -2,7 +2,10 @@ module storage_adapter
 import geometry
 import rand
 import os
-import imdb
+
+import topodb.imdb{create_db}
+
+import topodb.types{Record,record_from_json}
 
 
 fn gen_some(n u8) []string{
@@ -12,20 +15,67 @@ fn gen_some(n u8) []string{
 	}
 	return list
 }
-fn test_create_storage_backend(){
-	mut fsb:=create_file_storage_backend("zaz") or {
-		panic("could not initialize storage adapter zaz because $err")
-	}
+fn test_create_storage_backend_happy(){
+	mut fsb:=create_file_storage_backend("zaz")!
 	println(fsb)
 		fsb.free()
 	println(fsb)
-	mut fsb2:=create_file_storage_backend("zaz") or {
-		panic("could not initialize storage adapter zaz because $err")
-	}
+	mut fsb2:=create_file_storage_backend("zaz")!
 	println(fsb2)
 		fsb2.free()
 	println(fsb2)
 	assert 1==1
+}
+fn test_create_storage_backend_bad_access(){
+	mut fsb1:=create_file_storage_backend("/zaz")or{
+		FileStorageBackend{
+			is_valid: false
+			name: ''
+			index_filename: ''
+			data_filename: ''
+			index: {}
+			index_file: os.File{}
+			data_file: os.File{}
+			last: 0
+		}
+	}
+	println(fsb1)
+	fsb1.free()
+	println(fsb1)
+	mut fsb2:=create_file_storage_backend("/zaz")or{
+			FileStorageBackend{
+			is_valid: false
+			name: ''
+			index_filename: ''
+			data_filename: ''
+			index: {}
+			index_file: os.File{}
+			data_file: os.File{}
+			last: 0
+		}
+	}
+	println(fsb2)
+	fsb2.free()
+	println(fsb2)
+	expresult:="storage_adapter.FileStorageBackend{
+    name: 'ERROPEN file /zaz.db.index.json could not be opened because Permission denied'
+    index_filename: 'topodb.storage_adapter.StorageAdapterError: ERROPEN file /zaz.db.index.json could not be opened because Permission denied'
+    data_filename: 'topodb.storage_adapter.StorageAdapterError: ERROPEN file /zaz.db.index.json could not be opened because Permission denied'
+    index: {}
+    index_file: os.File{
+        cfile: 0
+        fd: 0
+        is_opened: false
+    }
+    data_file: os.File{
+        cfile: 0
+        fd: 0
+        is_opened: false
+    }
+    last: 1
+}"
+	assert fsb1.str()==expresult
+	assert fsb2.str()==expresult
 }
 
 
@@ -35,7 +85,7 @@ pub fn test_read_all_map(){
 	list:=gen_some(10)
 	write_all(fname,list)
 	mm:=read_all_map[geometry.Box](fname,fn(s string) geometry.Box {
-		return imdb.record_from_json(s).cast[geometry.Box]()
+		return record_from_json(s).cast[geometry.Box]()
 	})
 	println(mm)
 	assert mm.len==10
@@ -53,44 +103,18 @@ pub fn test_read_all(){
 	fname:="test_read_all.db.json"
 	list:=gen_some(10)
 	write_all(fname,list)
-	gen:=list.map(imdb.record_from_json(it))
+	gen:=list.map(record_from_json(it))
 	data:=read_all(fname)
 	for i,v in gen {
 		assert v == data[i]
 	}
 }
-
-
-/// fn test_os_file(){
-/// 	fname:="test.db.json"
-/// 	mut lines:= os.read_lines(fname) or {
-/// 		panic("ERROPEN file $fname")
-/// 	}.map(fn (line string) imdb.Record{
-/// 		return imdb.record_from_json(line)
-/// 	})
-/// 	println(lines)
-/// 	// read all
-///
-/// 	last_line:=get_last_pos(fname)
-/// 	event_data:='{"id":"${rand.uuid_v4()}","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}'
-/// 	r:=imdb.record_from_json(event_data)
-/// 	mut f := os.open_append(fname) or {
-/// 		panic("ERROPEN file $fname")
-/// 	}
-/// 	f.writeln(event_data)or {
-/// 		panic("couldn't write $event_data to $fname")
-/// 	}
-/// 	println("added $event_data")
-/// 	f.close()
-/// 	assert 1==1
-/// }
-
 fn test_imdb_events_with_file_io(){
 	println('----------------------------------------' + @MOD + '..' + @FN)
 	println('file: ' + @FILE + ':' + @LINE + ' | fn: ' + @MOD + '..' + @FN)
-	mut db:=imdb.create_db("vspace")
+	mut db:=create_db("vspace")
 	db.index_by("box",fn(str string)[]string{
-		record:=imdb.record_from_json(str)
+		record:=record_from_json(str)
 		box:=record.cast[geometry.Box]()
 		return box.all_slices(20).map( fn (slice geometry.Box) string {
 			return "${slice.anchor.x},${slice.anchor.y}@20"
@@ -105,7 +129,7 @@ fn test_imdb_events_with_file_io(){
 		mut f := os.open_append(fname) or {
 			panic("ERROPEN file $fname")
 		}
-		r:=imdb.record_from_json(event_data)
+		r:=record_from_json(event_data)
 		f.writeln(event_data)or {
 			panic("couldn't write $event_data to $fname")
 		}

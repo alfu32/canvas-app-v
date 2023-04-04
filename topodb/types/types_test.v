@@ -1,4 +1,4 @@
-module imdb
+module types
 
 import rand
 import range
