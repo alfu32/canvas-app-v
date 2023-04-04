@@ -1,5 +1,4 @@
-module point_test
-import geometry
+module geometry
 import math
 
 fn test_point_create(){
@@ -262,7 +261,7 @@ fn test_point_to_orthogonal(){
 	println(p.string())
 	println(q.string())
 	println(u.string())
-	
+
 	assert math.tolerance(p.x,1,0.1)
 	assert math.tolerance(p.y,1,0.1)
 }

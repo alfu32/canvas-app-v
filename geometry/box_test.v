@@ -1,6 +1,4 @@
-module box_test
-import geometry {Point,Transformer2D,Box,BoxIterator}
-import math { sqrt,atan2 }
+module geometry
 
 fn test_box_create(){
 	b := Box{Point{10,20},Point{100,75}}

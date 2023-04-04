@@ -1,4 +1,5 @@
-module types_test
+module imdb
+
 import rand
 import range
 

@@ -1,13 +1,11 @@
-module imdb_storage_test
-import imdb_storage
-import imdb
+module imdb
 import geometry
 import rand
 import os
 
 
 fn test_create_storage_backend(){
-	fsb:=imdb_storage.create_file_storage_backend("zaz")
+	fsb:=create_file_storage_backend("zaz")
 	println(fsb)
 	assert 1==2
 }
@@ -31,8 +29,8 @@ pub struct JsonRowMapper[T]{
 pub fn test_read_all_map(){
 	fname:="test_read_all.json"
 	list:=gen_some(10)
-	imdb_storage.write_all(fname,list)
-	mm:=imdb_storage.read_all_map[geometry.Box](fname,fn(s string) geometry.Box {
+	write_all(fname,list)
+	mm:=read_all_map[geometry.Box](fname,fn(s string) geometry.Box {
 		return imdb.record_from_json(s).cast[geometry.Box]()
 	})
 	println(mm)
@@ -43,45 +41,45 @@ pub fn test_read_all_map(){
 pub fn test_write_all(){
 	fname:="test_write_all.json"
 	list:=gen_some(10)
-	imdb_storage.write_all(fname,list)
+	write_all(fname,list)
 	assert 1==1
 
 }
 pub fn test_read_all(){
 	fname:="test_read_all.json"
 	list:=gen_some(10)
-	imdb_storage.write_all(fname,list)
+	write_all(fname,list)
 	gen:=list.map(imdb.record_from_json(it))
-	data:=imdb_storage.read_all(fname)
+	data:=read_all(fname)
 	for i,v in gen {
 		assert v == data[i]
 	}
 }
 
 
-fn test_os_file(){
-	fname:="test.db.json"
-	mut lines:= os.read_lines(fname) or {
-		panic("ERROPEN file $fname")
-	}.map(fn (line string) imdb.Record{
-		return imdb.record_from_json(line)
-	})
-	println(lines)
-	// read all
-
-	last_line:=imdb_storage.get_line_nmbr(fname)
-	event_data:='{"id":"${rand.uuid_v4()}","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}'
-	r:=imdb.record_from_json(event_data)
-	mut f := os.open_append(fname) or {
-		panic("ERROPEN file $fname")
-	}
-	f.writeln(event_data)or {
-		panic("couldn't write $event_data to $fname")
-	}
-	println("added $event_data")
-	f.close()
-	assert 1==1
-}
+/// fn test_os_file(){
+/// 	fname:="test.db.json"
+/// 	mut lines:= os.read_lines(fname) or {
+/// 		panic("ERROPEN file $fname")
+/// 	}.map(fn (line string) imdb.Record{
+/// 		return imdb.record_from_json(line)
+/// 	})
+/// 	println(lines)
+/// 	// read all
+///
+/// 	last_line:=get_last_pos(fname)
+/// 	event_data:='{"id":"${rand.uuid_v4()}","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}'
+/// 	r:=imdb.record_from_json(event_data)
+/// 	mut f := os.open_append(fname) or {
+/// 		panic("ERROPEN file $fname")
+/// 	}
+/// 	f.writeln(event_data)or {
+/// 		panic("couldn't write $event_data to $fname")
+/// 	}
+/// 	println("added $event_data")
+/// 	f.close()
+/// 	assert 1==1
+/// }
 
 fn test_imdb_events_with_file_io(){
 	println('----------------------------------------' + @MOD + '.' + @FN)

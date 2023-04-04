@@ -1,8 +1,6 @@
-module imdb_test
-import imdb {IndexedJsonStore,create_db,Record,EventType,record_from_json,typed_record_from_json}
+module imdb
 import geometry { Box }
 import json
-import os
 
 fn test_record_decode(){
 	r:=Record{
@@ -131,7 +129,7 @@ fn test_imdb_find_by_index(){
 
 	assert a.len == 1
 	assert b.len == 2
-	
+
 }
 fn test_imdb_index_and_remove_from_indexes(){
 	println('----------------------------------------' + @MOD + '.' + @FN)

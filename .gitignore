@@ -1,6 +1,6 @@
 # Binaries for programs and plugins
 main
-vtutorial
+untitled19
 *.exe
 *.exe~
 *.so
@@ -15,15 +15,3 @@ bin/
 .idea/
 .vscode/
 *.iml
-
-# ENV
-.env
-
-# vweb and database
-*.db
-*.js
-
-*.db.json
-
-scripts/semver.sh
-srcc

@@ -1,5 +1,4 @@
-module imdb_storage
-import imdb
+module imdb
 import os
 import json
 
@@ -19,7 +18,7 @@ pub struct FileStorageBackend{
 	last u64
 }
 pub fn create_file_storage_backend(name string) FileStorageBackend{
-	
+
 	mut fsb:=FileStorageBackend{
 		name:name,
 		index_filename:"${name}.db.index.json",
@@ -44,7 +43,7 @@ pub fn create_file_storage_backend(name string) FileStorageBackend{
 }
 
 pub fn open_file_storage_backend(name string) FileStorageBackend{
-	
+
 	mut fsb:=FileStorageBackend{
 		name:name,
 		index_filename:"${name}.db.index.json",
@@ -72,14 +71,14 @@ pub fn (mut fsb FileStorageBackend) free(){
 	fsb.data_file.close()
 }
 
-pub fn (mut fsb FileStorageBackend) push(rec imdb.Record){
+pub fn (mut fsb FileStorageBackend) push(rec Record){
 	fsb.index[rec.id]<<FileIndex{pos:u64(rec.data.len)+1+fsb.last,len:u64(rec.data.len)}
 	fsb.data_file.writeln(rec.data) or {
 		panic("could not write $rec to $fsb.data_filename")
 	}
 	fsb.last=fsb.last+u64(rec.data.len)+1
 }
-pub fn (mut fsb FileStorageBackend) push_all(all []imdb.Record){
+pub fn (mut fsb FileStorageBackend) push_all(all []Record){
 	for j in all {
 		fsb.push(j)
 	}
@@ -101,9 +100,32 @@ pub fn (mut fsb FileStorageBackend) fetch_all(ids []string) []string {
 }
 
 
-fn get_line_nmbr(path string) u64{
-	ll:=os.execute('find ./$path -type f -exec wc -lc {} +')
-	return ll.output.trim(' ').split(' ')[0].u64()
+fn get_last_pos(path string) i64{
+	// ll:=os.execute('find ./$path -type f -exec wc -lc {} +')
+	// return ll.output.trim(' ').split(' ')[0].u64()
+	mut file:=os.open(path) or { panic("could not open $path as file ") }
+	defer {
+		file.close()
+	}
+	file.seek(0, os.SeekMode.end) or{
+		panic("couldn't seek on file $path")
+	}
+	pos:=file.tell() or {
+		panic("couldn't tell on file $path")
+	}
+	return pos
+
+}
+fn (mut fsb FileStorageBackend) get_last_pos(path string) i64{
+	// ll:=os.execute('find ./$path -type f -exec wc -lc {} +')
+	// return ll.output.trim(' ').split(' ')[0].u64()
+	fsb.data_file.seek(0, os.SeekMode.end) or{
+		panic("couldn't seek on file ${fsb.data_filename}")
+	}
+	pos:=fsb.data_file.tell() or{
+		panic("couldn't tell on file ${fsb.data_filename}")
+	}
+	return pos
 }
 
 pub fn read_all_map[T](filename string,mapper fn (row string) T) []T{
@@ -144,13 +166,13 @@ fn write_all[T](fname string,list []T){
 	}
 	f.close()
 }
-fn read_all(fname string) []imdb.Record{
+fn read_all(fname string) []Record{
 	mut strings:= os.read_lines(fname) or {
 		panic("ERROPEN file $fname")
 	}
-	mut lines:=[]imdb.Record{}
+	mut lines:=[]Record{}
 	for s in strings {
-		lines<<imdb.record_from_json(s)
+		lines<<record_from_json(s)
 	}
 	return(lines)
 }
