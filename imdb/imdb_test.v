@@ -49,7 +49,7 @@ fn test_record_cast(){
 }
 fn test_imdb_create(){
 	mut a:=create_db("vspace")
-	// println(a.string())
+	println(a)
 	assert 1==1
 }
 
@@ -188,6 +188,8 @@ fn test_imdb_events(){
 	println('----------------------------------------' + @MOD + '.' + @FN)
 	println('file: ' + @FILE + ':' + @LINE + ' | fn: ' + @MOD + '.' + @FN)
 	mut db:=create_db("vspace")
+	mut events:=[]string{}
+	mut ev:=&events
 	db.index_by("box",fn(str string)[]string{
 		record:=record_from_json(str)
 		box:=record.cast[Box]()
@@ -195,14 +197,17 @@ fn test_imdb_events(){
 			return "${slice.anchor.x},${slice.anchor.y}@20"
 		})
 	})
-	db.on('add',fn (event_data string){
-		println("added $event_data")
+	db.on('add',fn [mut ev](event_data string){
+		op:=('{"operation":"added","event_data":$event_data}')
+		ev<<op
 	})
-	db.on('remove',fn (event_data string){
-		println("removed $event_data")
+	db.on('remove',fn [mut ev](event_data string){
+		op:=('{"operation":"removed","event_data":$event_data}')
+		ev<<op
 	})
-	db.on('update',fn (event_data string){
-		println("updated $event_data")
+	db.on('update',fn [mut ev](event_data string){
+		op:=('{"operation":"updated","event_data":$event_data}')
+		ev<<op
 	})
 
 	db.add('{"id":"werwer","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}')
@@ -225,5 +230,26 @@ fn test_imdb_events(){
 	db.remove('{"id":"acpi","anchor":{"x":80,"y":20},"size":{"x":20,"y":40}}')
 
 	println(db)
-	assert 1==1
+	for evt in events {
+		println(evt)
+	}
+	expected:=[
+		'{"operation":"added","event_data":{"id":"werwer","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}}'
+		'{"operation":"added","event_data":{"id":"asdf","anchor":{"x":10,"y":20},"size":{"x":10,"y":10}}}'
+		'{"operation":"added","event_data":{"id":"xcvxc","anchor":{"x":15,"y":10},"size":{"x":40,"y":40}}}'
+		'{"operation":"added","event_data":{"id":"tyuty","anchor":{"x":20,"y":90},"size":{"x":20,"y":20}}}'
+		'{"operation":"added","event_data":{"id":"acpi","anchor":{"x":80,"y":20},"size":{"x":20,"y":40}}}'
+		'{"operation":"updated","event_data":{"id":"werwer","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}}'
+		'{"operation":"updated","event_data":{"id":"asdf","anchor":{"x":10,"y":20},"size":{"x":10,"y":10}}}'
+		'{"operation":"updated","event_data":{"id":"xcvxc","anchor":{"x":15,"y":10},"size":{"x":40,"y":40}}}'
+		'{"operation":"updated","event_data":{"id":"tyuty","anchor":{"x":20,"y":90},"size":{"x":20,"y":20}}}'
+		'{"operation":"updated","event_data":{"id":"acpi","anchor":{"x":80,"y":20},"size":{"x":20,"y":40}}}'
+		'{"operation":"removed","event_data":{"id":"werwer","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}}'
+		'{"operation":"removed","event_data":{"id":"asdf","anchor":{"x":10,"y":20},"size":{"x":10,"y":10}}}'
+		'{"operation":"removed","event_data":{"id":"xcvxc","anchor":{"x":15,"y":10},"size":{"x":40,"y":40}}}'
+		'{"operation":"removed","event_data":{"id":"tyuty","anchor":{"x":20,"y":90},"size":{"x":20,"y":20}}}'
+		'{"operation":"removed","event_data":{"id":"acpi","anchor":{"x":80,"y":20},"size":{"x":20,"y":40}}}'
+	]
+	assert events.len==15
+	assert expected==events
 }

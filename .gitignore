@@ -16,3 +16,6 @@ bin/
 .vscode/
 *.iml
 *.db.json
+*.db.index.json
+canvas-app-v
+

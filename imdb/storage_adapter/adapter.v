@@ -1,7 +1,20 @@
-module imdb
+module storage_adapter
 import os
 import json
+import imdb
 
+pub struct StorageAdapterError{
+	Error
+	msg string
+	code int
+	cause IError
+}
+pub fn (sae StorageAdapterError) msg()string{
+	return sae.msg
+}
+pub fn (sae StorageAdapterError) code()int{
+	return sae.code
+}
 pub struct FileIndex{
 	pos u64
 	len u64
@@ -17,7 +30,7 @@ pub struct FileStorageBackend{
 	data_file os.File
 	last u64
 }
-pub fn create_file_storage_backend(name string) FileStorageBackend{
+pub fn create_file_storage_backend(name string) !FileStorageBackend{
 
 	mut fsb:=FileStorageBackend{
 		name:name,
@@ -26,18 +39,38 @@ pub fn create_file_storage_backend(name string) FileStorageBackend{
 		index:map[string][]FileIndex{}
 		last:0
 	}
-
-	fsb.index_file=os.create(fsb.index_filename) or {
-		panic("ERRCREATE file $fsb.index_filename could not be created")
+	fsb.index_file=os.open_file(fsb.index_filename,"w") or {
+		//panic("ERROPEN file $fsb.index_filename could not be opened because $err")
+		return IError(StorageAdapterError{
+			msg:"ERROPEN file $fsb.index_filename could not be opened because $err"
+			code:1
+			cause:err
+		})
 	}
-	fsb.data_file=os.create(fsb.data_filename) or {
-		panic("ERRCREATE file $fsb.data_filename could not be created")
+	fsb.data_file=os.open_append(fsb.data_filename,) or {
+		//panic("ERROPEN file $fsb.data_filename could not be opened because $err")
+		return IError(StorageAdapterError{
+			msg:"ERROPEN file $fsb.data_filename could not be opened because $err"
+			code:2
+			cause:err
+		})
 	}
 	mut index_string_json:= os.read_file(fsb.index_filename) or {
-		panic("ERROPEN file $fsb.index_filename")
+		// panic("ERROPEN file $fsb.index_filename")
+		return IError(StorageAdapterError{
+			msg:"ERROPEN file $fsb.index_filename because $err"
+			code:3
+			cause:err
+		})
 	}
+	index_string_json= if index_string_json=="" {"{}"}else{index_string_json}
 	fsb.index=json.decode(map[string][]FileIndex,index_string_json) or {
 		panic("ERRJSON file $fsb.index_filename is not valid json")
+		return IError(StorageAdapterError{
+			msg:"ERRJSON file $fsb.index_filename is not valid json because $err"
+			code:4
+			cause:err
+		})
 	}
 	return fsb
 }
@@ -70,15 +103,14 @@ pub fn (mut fsb FileStorageBackend) free(){
 	fsb.index_file.close()
 	fsb.data_file.close()
 }
-
-pub fn (mut fsb FileStorageBackend) push(rec Record){
+pub fn (mut fsb FileStorageBackend) push(rec imdb.Record){
 	fsb.index[rec.id]<<FileIndex{pos:u64(rec.data.len)+1+fsb.last,len:u64(rec.data.len)}
 	fsb.data_file.writeln(rec.data) or {
 		panic("could not write $rec to $fsb.data_filename")
 	}
 	fsb.last=fsb.last+u64(rec.data.len)+1
 }
-pub fn (mut fsb FileStorageBackend) push_all(all []Record){
+pub fn (mut fsb FileStorageBackend) push_all(all []imdb.Record){
 	for j in all {
 		fsb.push(j)
 	}
@@ -98,7 +130,17 @@ pub fn (mut fsb FileStorageBackend) fetch_all(ids []string) []string {
 	}
 	return list
 }
-
+fn (mut fsb FileStorageBackend) get_last_pos(path string) i64{
+	// ll:=os.execute('find ./$path -type f -exec wc -lc {} +')
+	// return ll.output.trim(' ').split(' ')[0].u64()
+	fsb.data_file.seek(0, os.SeekMode.end) or{
+		panic("couldn't seek on file ${fsb.data_filename}")
+	}
+	pos:=fsb.data_file.tell() or{
+		panic("couldn't tell on file ${fsb.data_filename}")
+	}
+	return pos
+}
 
 fn get_last_pos(path string) i64{
 	// ll:=os.execute('find ./$path -type f -exec wc -lc {} +')
@@ -116,18 +158,6 @@ fn get_last_pos(path string) i64{
 	return pos
 
 }
-fn (mut fsb FileStorageBackend) get_last_pos(path string) i64{
-	// ll:=os.execute('find ./$path -type f -exec wc -lc {} +')
-	// return ll.output.trim(' ').split(' ')[0].u64()
-	fsb.data_file.seek(0, os.SeekMode.end) or{
-		panic("couldn't seek on file ${fsb.data_filename}")
-	}
-	pos:=fsb.data_file.tell() or{
-		panic("couldn't tell on file ${fsb.data_filename}")
-	}
-	return pos
-}
-
 pub fn read_all_map[T](filename string,mapper fn (row string) T) []T{
 	mut strings:= os.read_lines(filename) or {
 		panic("ERROPEN file $filename")
@@ -166,13 +196,13 @@ fn write_all[T](fname string,list []T){
 	}
 	f.close()
 }
-fn read_all(fname string) []Record{
+fn read_all(fname string) []imdb.Record{
 	mut strings:= os.read_lines(fname) or {
 		panic("ERROPEN file $fname")
 	}
-	mut lines:=[]Record{}
+	mut lines:=[]imdb.Record{}
 	for s in strings {
-		lines<<record_from_json(s)
+		lines<<imdb.record_from_json(s)
 	}
 	return(lines)
 }

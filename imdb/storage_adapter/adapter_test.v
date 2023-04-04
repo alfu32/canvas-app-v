@@ -1,14 +1,8 @@
-module imdb
+module storage_adapter
 import geometry
 import rand
 import os
-
-
-fn test_create_storage_backend(){
-	fsb:=create_file_storage_backend("zaz")
-	println(fsb)
-	assert 1==2
-}
+import imdb
 
 
 fn gen_some(n u8) []string{
@@ -18,16 +12,26 @@ fn gen_some(n u8) []string{
 	}
 	return list
 }
-pub interface RowMapper[T]{
-	map_from_string fn (row string) T
+fn test_create_storage_backend(){
+	mut fsb:=create_file_storage_backend("zaz") or {
+		panic("could not initialize storage adapter zaz because $err")
+	}
+	println(fsb)
+		fsb.free()
+	println(fsb)
+	mut fsb2:=create_file_storage_backend("zaz") or {
+		panic("could not initialize storage adapter zaz because $err")
+	}
+	println(fsb2)
+		fsb2.free()
+	println(fsb2)
+	assert 1==1
 }
-pub struct JsonRowMapper[T]{
-	map_from_string fn (row string) T
-}
+
 
 
 pub fn test_read_all_map(){
-	fname:="test_read_all.json"
+	fname:="test_read_all.db.json"
 	list:=gen_some(10)
 	write_all(fname,list)
 	mm:=read_all_map[geometry.Box](fname,fn(s string) geometry.Box {
@@ -39,14 +43,14 @@ pub fn test_read_all_map(){
 }
 
 pub fn test_write_all(){
-	fname:="test_write_all.json"
+	fname:="test_write_all.db.json"
 	list:=gen_some(10)
 	write_all(fname,list)
 	assert 1==1
 
 }
 pub fn test_read_all(){
-	fname:="test_read_all.json"
+	fname:="test_read_all.db.json"
 	list:=gen_some(10)
 	write_all(fname,list)
 	gen:=list.map(imdb.record_from_json(it))
@@ -82,8 +86,8 @@ pub fn test_read_all(){
 /// }
 
 fn test_imdb_events_with_file_io(){
-	println('----------------------------------------' + @MOD + '.' + @FN)
-	println('file: ' + @FILE + ':' + @LINE + ' | fn: ' + @MOD + '.' + @FN)
+	println('----------------------------------------' + @MOD + '..' + @FN)
+	println('file: ' + @FILE + ':' + @LINE + ' | fn: ' + @MOD + '..' + @FN)
 	mut db:=imdb.create_db("vspace")
 	db.index_by("box",fn(str string)[]string{
 		record:=imdb.record_from_json(str)

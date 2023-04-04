@@ -2,6 +2,13 @@ module imdb
 import json
 import rand
 
+
+pub interface RowMapper[T]{
+	map_from_string fn (row string) T
+}
+pub struct JsonRowMapper[T]{
+	map_from_string fn (row string) T
+}
 pub struct TypedRecord[T]{
 	pub mut:
 	id string
