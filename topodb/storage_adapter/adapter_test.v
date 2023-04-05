@@ -114,12 +114,11 @@ fn test_imdb_events_with_file_io(){
 			return "${slice.anchor.x},${slice.anchor.y}@20"
 		})
 	})
-	file_index:=[]int{}
 
 	// >> do something with file; file is locked <<
 
 	db.on('add',fn [db](event_data string) ! {
-		fname:="_test_data/${db.name}.db.json"
+		fname:="${db.name}.db.json"
 		mut f := os.open_append(fname)!
 		r:=record_from_json(event_data)!
 		f.writeln(event_data)!

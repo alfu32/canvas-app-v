@@ -135,7 +135,7 @@ fn test_imdb_find_by_index(){
 fn test_imdb_index_and_remove_from_indexes(){
 	println('----------------------------------------' + @MOD + '..' + @FN)
 	println('file: ' + @FILE + ':' + @LINE + ' | fn: ' + @MOD + '..' + @FN)
-	mut db:=create_db("vspace")
+	mut db:=create_db("_test_data/vspace")
 	index_by_box:=fn(str string)![]string{
 		record:=record_from_json(str)!
 		box:=record.cast[Box]()!
