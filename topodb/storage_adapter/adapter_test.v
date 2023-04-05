@@ -75,7 +75,7 @@ fn test_store(){
 
 
 pub fn test_read_all_map(){
-	fname:="test_read_all.db.json"
+	fname:="_test_data/test_read_all.db.json"
 	list:=gen_some(10)
 	write_all(fname,list)!
 	mm:=read_all_map[geometry.Box](fname,fn(s string) !geometry.Box {
@@ -87,14 +87,14 @@ pub fn test_read_all_map(){
 }
 
 pub fn test_write_all(){
-	fname:="test_write_all.db.json"
+	fname:="_test_data/test_write_all.db.json"
 	list:=gen_some(10)
 	write_all(fname,list)!
 	assert 1==1
 
 }
 pub fn test_read_all(){
-	fname:="test_read_all.db.json"
+	fname:="_test_data/test_read_all.db.json"
 	list:=gen_some(10)
 	write_all(fname,list)!
 	gen:=list.map(record_from_json(it)!)
@@ -106,7 +106,7 @@ pub fn test_read_all(){
 fn test_imdb_events_with_file_io(){
 	println('----------------------------------------' + @MOD + '..' + @FN)
 	println('file: ' + @FILE + ':' + @LINE + ' | fn: ' + @MOD + '..' + @FN)
-	mut db:=create_db("vspace")
+	mut db:=create_db("_test_data/vspace")
 	db.index_by("box",fn(str string)![]string{
 		record:=record_from_json(str)!
 		box:=record.cast[geometry.Box]()!
@@ -119,7 +119,7 @@ fn test_imdb_events_with_file_io(){
 	// >> do something with file; file is locked <<
 
 	db.on('add',fn [db](event_data string) ! {
-		fname:="${db.name}.db.json"
+		fname:="_test_data/${db.name}.db.json"
 		mut f := os.open_append(fname)!
 		r:=record_from_json(event_data)!
 		f.writeln(event_data)!
