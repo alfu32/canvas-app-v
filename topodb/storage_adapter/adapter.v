@@ -118,36 +118,40 @@ pub fn (mut fsb FileStorageBackend) push_all(all []Record) ! {
 	}
 	d.close()
 }
-pub fn (mut fsb FileStorageBackend) fetch_history_all(ids []string) ![]string {
-	mut dat:=open_or_create(fsb.data_filename,"")!
-	dat.seek(0,os.SeekMode.start)!
+pub fn (mut fsb FileStorageBackend) history(ids []string) ![]string {
+	indexes:= arrays.flat_map[string, FileIndex](fsb.index
+	.keys()
+	.filter(fn[ids](id string) bool{return id in ids}),
+	fn[fsb](id string) []FileIndex{
+		return fsb.index[id]
+	})
+	println("history::INDEXES")
+	println(indexes)
+	mut fl:=os.open(fsb.data_filename)!
+	records:=indexes.map(fn[fl](fi FileIndex) string {
+		b:=fl.read_bytes_at(int(fi.len),fi.pos).bytestr()
+		return b
+	})
+	fl.close()
+	return records
+}
+pub fn (mut fsb FileStorageBackend) fetch(ids []string) ![]string {
 
 	indexes:=fsb.index
 	.keys()
 	.filter(fn[ids](k string) bool{return k in ids})
-	.map(fn[fsb](id string) []FileIndex {
-		return fsb.index[id]
+	.map(fn[fsb](id string) FileIndex {
+		return fsb.index[id].last()
 	})
-	list:=arrays.flat_map[[]FileIndex, FileIndex](
-		indexes,
-		fn(items []FileIndex) []FileIndex {return items}
-	).map(fn[dat](fi FileIndex) string{
-		return dat.read_bytes_at(int(fi.len),fi.pos).bytestr()
+	println("fetch::INDEXES")
+	println(indexes)
+	mut fl:=os.open(fsb.data_filename)!
+	records:=indexes.map(fn[fl](fi FileIndex) string {
+		b:=fl.read_bytes_at(int(fi.len),fi.pos).bytestr()
+		return b
 	})
-	dat.close()
-	return list
-}
-pub fn (mut fsb FileStorageBackend) fetch_all(ids []string) ![]string {
-	mut dat:=open_or_create(fsb.data_filename,"")!
-	defer{
-		dat.close()
-	}
-	mut list:=[]string{}
-	for id in ids {
-		fp:=fsb.index[id].last()
-		list<<dat.read_bytes_at(int(fp.len),fp.pos).str()
-	}
-	return list
+	fl.close()
+	return records
 }
 
 pub fn open_or_create(path string,default_contents string) !os.File {
