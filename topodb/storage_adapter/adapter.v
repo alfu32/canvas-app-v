@@ -2,6 +2,8 @@ module storage_adapter
 import os
 import json
 import topodb.types{Record,record_from_json}
+import time
+import arrays
 
 	pub const exports=[
 	"StorageAdapterError"
@@ -28,54 +30,48 @@ pub fn (sae StorageAdapterError) code()int{
 pub struct FileIndex{
 	pos u64
 	len u64
+	timestamp i64 = time.now().unix_time_milli()
 }
-
+enum IndexingStrategy{
+	history=1
+	last
+}
+pub interface StorageBackend{
+	indexing_strategy IndexingStrategy
+	dispose() !int
+	add_to_index(rec Record)
+	rebuild_index() !
+	push(rec Record) !
+	push_all(all []Record) !
+	fetch(id string) ![]string
+	fetch_all(ids []string) ![]string
+}
 pub struct FileStorageBackend{
+	mut:
+	indexing_strategy IndexingStrategy=IndexingStrategy.history
 	name string
 	index_filename string
 	data_filename string
-	mut:
 	index map[string][]FileIndex
 	last u64
 }
-pub fn open_or_create(path string,default_contents string) !os.File {
-	exists:=os.exists(path)
-	mut fl:=os.File{}
-	if !exists {
+pub fn init_create(name string,indexing_strategy IndexingStrategy) !FileStorageBackend {
 
-		fl= os.create(path)!
-		os.write_file(path,default_contents)!
-	} else {
-		fl = os.open_append(path)!
-	}
-	return fl
-}
-pub fn read_and_decode(path string) !map[string][]FileIndex {
-	data_string:=os.read_file(path)!
-	return json.decode(map[string][]FileIndex,data_string)!
-}
-pub fn create_file_storage_backend(name string) !FileStorageBackend{
-	mut index_filename:="${name}.db.index.json"
-	mut data_filename:="${name}.db.json"
-	mut index:=map[string][]FileIndex{}
-	mut index_file:=open_or_create(index_filename,"{}")!
+	mut fsb:=FileStorageBackend{indexing_strategy:indexing_strategy,name:name}
+	fsb.index_filename="${fsb.name}.db.index.json"
+	fsb.data_filename="${fsb.name}.db.json"
+	fsb.index=map[string][]FileIndex{}
+	mut index_file:=open_or_create(fsb.index_filename,"{}")!
 	index_file.close()
-	mut data_file:=open_or_create(data_filename,"")!
+	mut data_file:=open_or_create(fsb.data_filename,"")!
 	data_file.close()
-	index=read_and_decode(index_filename)!
-	return FileStorageBackend{
-		name
-		index_filename
-		data_filename
-		index
-		0
-	}
-
+	fsb.index=read_and_decode(fsb.index_filename)!
+	return fsb
 }
-
-pub fn open_file_storage_backend(name string) !FileStorageBackend{
+pub fn init_open(name string,indexing_strategy IndexingStrategy) !FileStorageBackend{
 
 	mut fsb:=FileStorageBackend{
+		indexing_strategy:indexing_strategy,
 		name:name,
 		index_filename:"${name}.db.index.json",
 		data_filename:"${name}.db.json",
@@ -96,47 +92,79 @@ pub fn (mut fsb FileStorageBackend) dispose() !int {
 	inx.close()
 	return -1
 }
-pub fn (mut fsb FileStorageBackend) push(rec Record) ! {
-	fsb.index[rec.id]<<FileIndex{pos:u64(rec.data.len)+1+fsb.last,len:u64(rec.data.len)}
-	mut dat:=open_or_create(fsb.data_filename,"")!
-	dat.seek(0,os.SeekMode.end)!
-	dat.writeln(rec.data)!
+pub fn (mut fsb FileStorageBackend) add_to_index(rec Record) {
+	match fsb.indexing_strategy{
+		.history {
+			fsb.index[rec.id]<<FileIndex{pos:fsb.last,len:u64(rec.data.len)}
+		}
+		.last {
+			fsb.index[rec.id]=[FileIndex{pos:fsb.last,len:u64(rec.data.len)}]
+		}
+	}
 	fsb.last=fsb.last+u64(rec.data.len)+1
 }
-pub fn (mut fsb FileStorageBackend) push_all(all []Record) ! {
-	for j in all {
-		fsb.push(j)!
+pub fn (mut fsb FileStorageBackend) rebuild_index() ! {
+	fsb.index=map[string][]FileIndex{}
+	for line in os.read_lines(fsb.data_filename)! {
+		r:=record_from_json(line)!
+		fsb.add_to_index(r)
 	}
 }
-pub fn (mut fsb FileStorageBackend) fetch(id string) ![]string {
+pub fn (mut fsb FileStorageBackend) push_all(all []Record) ! {
+	mut d:=os.open_append(fsb.data_filename)!
+	for rec in all {
+		d.writeln(rec.data)!
+		fsb.add_to_index(rec)
+	}
+	d.close()
+}
+pub fn (mut fsb FileStorageBackend) fetch_history_all(ids []string) ![]string {
+	mut dat:=open_or_create(fsb.data_filename,"")!
+	dat.seek(0,os.SeekMode.start)!
+
+	indexes:=fsb.index
+	.keys()
+	.filter(fn[ids](k string) bool{return k in ids})
+	.map(fn[fsb](id string) []FileIndex {
+		return fsb.index[id]
+	})
+	list:=arrays.flat_map[[]FileIndex, FileIndex](
+		indexes,
+		fn(items []FileIndex) []FileIndex {return items}
+	).map(fn[dat](fi FileIndex) string{
+		return dat.read_bytes_at(int(fi.len),fi.pos).bytestr()
+	})
+	dat.close()
+	return list
+}
+pub fn (mut fsb FileStorageBackend) fetch_all(ids []string) ![]string {
 	mut dat:=open_or_create(fsb.data_filename,"")!
 	defer{
 		dat.close()
 	}
-	idx:=fsb.index[id]
 	mut list:=[]string{}
-	for fp in idx {
+	for id in ids {
+		fp:=fsb.index[id].last()
 		list<<dat.read_bytes_at(int(fp.len),fp.pos).str()
 	}
 	return list
 }
-pub fn (mut fsb FileStorageBackend) fetch_all(ids []string) ![]string {
-	mut list:=[]string{}
-	for id in ids {
-		list<<fsb.fetch(id)!
-	}
-	return list
-}
-fn (mut fsb FileStorageBackend) get_last_pos(path string) !i64{
-	mut dat:=os.open(fsb.data_filename)!
-	defer{
-		dat.close()
-	}
-	dat.seek(0, os.SeekMode.end)!
-	pos:=dat.tell()!
-	return pos
-}
 
+pub fn open_or_create(path string,default_contents string) !os.File {
+	exists:=os.exists(path)
+	mut fl:=os.File{}
+	if !exists {
+		fl= os.create(path)!
+		os.write_file(path,default_contents)!
+	} else {
+		fl = os.open_append(path)!
+	}
+	return fl
+}
+pub fn read_and_decode(path string) !map[string][]FileIndex {
+	data_string:=os.read_file(path)!
+	return json.decode(map[string][]FileIndex,data_string)!
+}
 fn get_last_pos(path string) !i64{
 	// ll:=os.execute('find ./$path -type f -exec wc -lc {} +')
 	// return ll.output.trim(' ').split(' ')[0].u64()
