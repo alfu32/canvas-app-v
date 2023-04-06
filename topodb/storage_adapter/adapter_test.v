@@ -104,39 +104,55 @@ fn test_fetch(){
 
 	os.rm("./_test_data/test_data.db.json") or {}
 	os.rm("./_test_data/test_data.db.index.json") or {}
-	t0:=time.now().unix_time_milli()
 	mut fsb:=init_create("./_test_data/test_data",IndexingStrategy.last)!
-	mut recs:=gen_some(11)!
-	recs<<gen_some(12)!
-	recs<<gen_some(11)!
+	mut recs:=gen_some(500)!
+	recs<<gen_some(500)!
+	recs<<gen_some(500)!
 	fsb.push_all(recs)!
 	fsb.dispose()!
 
 	fsb=init_open("./_test_data/test_data",IndexingStrategy.last)!
-	t1:=time.now().unix_time_milli() - t0
-	println("FSB")
-	println(fsb)
-	indexes:=fsb.index
-		.keys()
-		.filter(fn(k string) bool{return k in ['2','10']})
-		.map(fn[fsb](id string) FileIndex {
-			return fsb.index[id].last()
-		})
-	println("INDEXES")
-	println(indexes)
-	mut fl:=os.open(fsb.data_filename)!
-	records:=indexes.map(fn[fl](fi FileIndex) string {
-		return fl.read_bytes_at(int(fi.len),fi.pos).bytestr()
-	})
-	fl.close()
-	println("RECORDS")
-	println(records)
-	println("created ${recs.len} in $t1 millis @ ${recs.len*1000/t1} records/s by strategy ${fsb.indexing_strategy}")
+	t0:=time.now().unix_time_milli()
 	fr:=fsb.fetch(['2','10'])!
 	println("FETCH")
 	println(fr)
+	t1:=f64(time.now().unix_time_milli()) - f64(t0) + 0.001
+	println("read ${fr.len} in $t1 millis @ ${fr.len*1000/t1} records/s by strategy ${fsb.indexing_strategy}")
 	fsb.dispose()!
+	assert fr.len==2
+	assert fr[0]=='{"id":"2","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}'
+	assert fr[1]=='{"id":"10","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}'
 }
+
+fn test_fetch_history(){
+
+	os.rm("./_test_data/test_data.db.json") or {}
+	os.rm("./_test_data/test_data.db.index.json") or {}
+	mut fsb:=init_create("./_test_data/test_data",IndexingStrategy.history)!
+	mut recs:=gen_some(500)!
+	recs<<gen_some(500)!
+	recs<<gen_some(500)!
+	fsb.push_all(recs)!
+	fsb.dispose()!
+
+	fsb=init_open("./_test_data/test_data",IndexingStrategy.history)!
+	t0:=time.now().unix_time_milli()
+	fr:=fsb.history(['2','10'])!
+	println("HISTORY")
+	println(fr)
+	t1:=f64(time.now().unix_time_milli()) - f64(t0) + 0.001
+	println("read ${fr.len} in $t1 millis @ ${fr.len*1000/t1} records/s by strategy ${fsb.indexing_strategy}")
+	fsb.dispose()!
+	assert fr == [
+		'{"id":"2","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}'
+		'{"id":"2","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}'
+		'{"id":"2","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}'
+		'{"id":"10","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}'
+		'{"id":"10","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}'
+		'{"id":"10","anchor":{"x":55,"y":80},"size":{"x":20,"y":40}}'
+	]
+}
+
 pub fn test_read_all_map(){
 	fname:="_test_data/test_read_all.db.json"
 	list:=gen_some(10)!
@@ -148,9 +164,6 @@ pub fn test_read_all_map(){
 	assert mm.len==10
 
 }
-
-
-
 pub fn test_write_all(){
 	fname:="_test_data/test_write_all.db.json"
 	list:=gen_some(10)!
@@ -158,48 +171,10 @@ pub fn test_write_all(){
 	assert 1==1
 
 }
-
-fn test_fetch_history(){
-
-	os.rm("./_test_data/test_data.db.json") or {}
-	os.rm("./_test_data/test_data.db.index.json") or {}
-	t0:=time.now().unix_time_milli()
-	mut fsb:=init_create("./_test_data/test_data",IndexingStrategy.last)!
-	mut recs:=gen_some(11)!
-	recs<<(gen_some(12)!)
-	recs<<gen_some(11)!
-	fsb.push_all(recs)!
-	fsb.dispose()!
-
-	fsb=init_open("./_test_data/test_data",IndexingStrategy.last)!
-	t1:=time.now().unix_time_milli() - t0
-	println("FSB")
-	println(fsb)
-	indexes:=fsb.index
-	.keys()
-	.filter(fn(k string) bool{return k in ['2','10']})
-	.map(fn[fsb](id string) FileIndex {
-		return fsb.index[id].last()
-	})
-	println("INDEXES")
-	println(indexes)
-	mut fl:=os.open(fsb.data_filename)!
-	records:=indexes.map(fn[fl](fi FileIndex) string {
-		return fl.read_bytes_at(int(fi.len),fi.pos).bytestr()
-	})
-	fl.close()
-	println("RECORDS")
-	println(records)
-	println("created ${recs.len} in $t1 millis @ ${recs.len*1000/t1} records/s by strategy ${fsb.indexing_strategy}")
-	fr:=fsb.history(['2','10'])!
-	println("HISTORY")
-	println(fr)
-	fsb.dispose()!
-}
 pub fn test_read_all(){
 	fname:="_test_data/test_read_all.db.json"
 	gen:=gen_some(10)!
-	write_all(fname,gen.map(fn (r Record) string{return json.encode(r)}))!
+	write_all(fname,gen.map(fn (r Record) string{return r.data}))!
 	data:=read_all(fname)!
 	for i,v in gen {
 		assert v == data[i]

@@ -3,7 +3,7 @@ import os
 import json
 import topodb.types{Record,record_from_json}
 import time
-import arrays
+// import arrays
 
 	pub const exports=[
 	"StorageAdapterError"
@@ -119,14 +119,16 @@ pub fn (mut fsb FileStorageBackend) push_all(all []Record) ! {
 	d.close()
 }
 pub fn (mut fsb FileStorageBackend) history(ids []string) ![]string {
-	indexes:= arrays.flat_map[string, FileIndex](fsb.index
-	.keys()
-	.filter(fn[ids](id string) bool{return id in ids}),
-	fn[fsb](id string) []FileIndex{
-		return fsb.index[id]
-	})
-	println("history::INDEXES")
-	println(indexes)
+	////	indexes:= arrays.flat_map[string, FileIndex](fsb.index
+	////	.keys()
+	////	.filter(fn[ids](id string) bool{return id in ids}),
+	////	fn[fsb](id string) []FileIndex{
+	////		return fsb.index[id]
+	////	})
+	mut indexes:=[]FileIndex{}
+	for id in ids {
+		indexes<<fsb.index[id]
+	}
 	mut fl:=os.open(fsb.data_filename)!
 	records:=indexes.map(fn[fl](fi FileIndex) string {
 		b:=fl.read_bytes_at(int(fi.len),fi.pos).bytestr()
@@ -137,14 +139,17 @@ pub fn (mut fsb FileStorageBackend) history(ids []string) ![]string {
 }
 pub fn (mut fsb FileStorageBackend) fetch(ids []string) ![]string {
 
-	indexes:=fsb.index
-	.keys()
-	.filter(fn[ids](k string) bool{return k in ids})
-	.map(fn[fsb](id string) FileIndex {
-		return fsb.index[id].last()
-	})
-	println("fetch::INDEXES")
-	println(indexes)
+	////    indexes:=fsb.index
+	////    .keys()
+	////    .filter(fn[ids](k string) bool{return k in ids})
+	////    .map(fn[fsb](id string) FileIndex {
+	////    	return fsb.index[id].last()
+	////    })
+	//
+	mut indexes:=[]FileIndex{}
+	for id in ids {
+		indexes<<fsb.index[id].last()
+	}
 	mut fl:=os.open(fsb.data_filename)!
 	records:=indexes.map(fn[fl](fi FileIndex) string {
 		b:=fl.read_bytes_at(int(fi.len),fi.pos).bytestr()
